@@ -395,14 +395,11 @@ run_chunk("s_fig4")
 
 
 ## @knitr unnamed-chunk-28
-#library()
+sessionInfo()
 
 
 ## @knitr unnamed-chunk-29
-version
-
-
-## @knitr unnamed-chunk-30
+library(knitr)
 purl("paper.Rnw")
 
 

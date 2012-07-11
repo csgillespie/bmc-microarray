@@ -982,53 +982,53 @@ run_chunk("s_fig4")
 
 \clearpage
 
-\section{List of R packages}
+\section{Session Information}
 
 
-\begin{table}[h]
-\centering
-\begin{tabular}{@{}llll@{}}
-\toprule
-Package & Version & Package & Version \\
-\midrule
-affy & \Sexpr{packageDescription("affy")$Version}   & IRanges & \Sexpr{packageDescription("IRanges")$Version} \\
-affyPLM & \Sexpr{packageDescription("affyPLM")$Version}  & limma & \Sexpr{packageDescription("limma")$Version} \\
-AnnotationDbi & \Sexpr{packageDescription("AnnotationDbi")$Version} & Mfuzz & \Sexpr{packageDescription("Mfuzz")$Version} \\
-ArrayExpress & \Sexpr{packageDescription("ArrayExpress")$Version} & timecourse & \Sexpr{packageDescription("timecourse")$Version}  \\
-Biobase & \Sexpr{packageDescription("Biobase")$Version}  & yeast2probe & \Sexpr{packageDescription("yeast2probe")$Version} \\
-Biostrings & \Sexpr{packageDescription("Biostrings")$Version} & yeast2cdf & \Sexpr{packageDescription("yeast2cdf")$Version} \\
-gcrma & \Sexpr{packageDescription("gcrma")$Version}  & \\
-\bottomrule
-\end{tabular}
-\caption{List of packages from Bioconductor used in this paper.}\label{AT.1}
-\end{table}
-
-<<echo=FALSE>>=
-#library()
-@
-
-\begin{table}[h]
-\centering
-\begin{tabular}{@{}llll@{}}
-\toprule
-Package & Version & Package & Version \\
-\midrule
-bitops & \Sexpr{packageDescription("bitops")$Version}  & GeneNet & \Sexpr{packageDescription("GeneNet")$Version} \\
-caTools & \Sexpr{packageDescription("caTools")$Version} & gplots & \Sexpr{packageDescription("gplots")$Version} \\ 
-corpcor & \Sexpr{packageDescription("corpcor")$Version} & grid & \Sexpr{packageDescription("grid")$Version} \\
-e1071 & \Sexpr{packageDescription("e1071")$Version}  & gtools & \Sexpr{packageDescription("gtools")$Version}  \\
-fdrtool & \Sexpr{packageDescription("fdrtool")$Version} & MASS & \Sexpr{packageDescription("MASS")$Version} \\
-gdata & \Sexpr{packageDescription("gdata")$Version}  & longitudinal &
-\Sexpr{packageDescription("longitudinal")$Version}  \\
-\bottomrule
-
-\end{tabular}
-\caption{List of packages from the CRAN repository used in this paper.}\label{AT.2}
-
-\end{table}
+% \begin{table}[h]
+% \centering
+% \begin{tabular}{@{}llll@{}}
+% \toprule
+% Package & Version & Package & Version \\
+% \midrule
+% affy & \Sexpr{packageDescription("affy")$Version}   & IRanges & \Sexpr{packageDescription("IRanges")$Version} \\
+% affyPLM & \Sexpr{packageDescription("affyPLM")$Version}  & limma & \Sexpr{packageDescription("limma")$Version} \\
+% AnnotationDbi & \Sexpr{packageDescription("AnnotationDbi")$Version} & Mfuzz & \Sexpr{packageDescription("Mfuzz")$Version} \\
+% ArrayExpress & \Sexpr{packageDescription("ArrayExpress")$Version} & timecourse & \Sexpr{packageDescription("timecourse")$Version}  \\
+% Biobase & \Sexpr{packageDescription("Biobase")$Version}  & yeast2probe & \Sexpr{packageDescription("yeast2probe")$Version} \\
+% Biostrings & \Sexpr{packageDescription("Biostrings")$Version} & yeast2cdf & \Sexpr{packageDescription("yeast2cdf")$Version} \\
+% gcrma & \Sexpr{packageDescription("gcrma")$Version}  & \\
+% \bottomrule
+% \end{tabular}
+% \caption{List of packages from Bioconductor used in this paper.}\label{AT.1}
+% \end{table}
+% 
+% <<echo=FALSE>>=
+% #library()
+% @
+% 
+% \begin{table}[h]
+% \centering
+% \begin{tabular}{@{}llll@{}}
+% \toprule
+% Package & Version & Package & Version \\
+% \midrule
+% bitops & \Sexpr{packageDescription("bitops")$Version}  & GeneNet & \Sexpr{packageDescription("GeneNet")$Version} \\
+% caTools & \Sexpr{packageDescription("caTools")$Version} & gplots & \Sexpr{packageDescription("gplots")$Version} \\ 
+% corpcor & \Sexpr{packageDescription("corpcor")$Version} & grid & \Sexpr{packageDescription("grid")$Version} \\
+% e1071 & \Sexpr{packageDescription("e1071")$Version}  & gtools & \Sexpr{packageDescription("gtools")$Version}  \\
+% fdrtool & \Sexpr{packageDescription("fdrtool")$Version} & MASS & \Sexpr{packageDescription("MASS")$Version} \\
+% gdata & \Sexpr{packageDescription("gdata")$Version}  & longitudinal &
+% \Sexpr{packageDescription("longitudinal")$Version}  \\
+% \bottomrule
+% 
+% \end{tabular}
+% \caption{List of packages from the CRAN repository used in this paper.}\label{AT.2}
+% 
+% \end{table}
 
 <<eval=TRUE>>=
-version
+sessionInfo()
 @ 
 
 
