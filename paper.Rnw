@@ -1,0 +1,1059 @@
+\documentclass[12pt,BCOR1mm,DIV18]{scrartcl}
+\usepackage{lscape}
+\usepackage{microtype}
+% -------------------------------------------------------------------------------
+
+\usepackage{cite} % Make references as [1-4], not [1,2,3,4]
+\usepackage{url}  % Formatting web addresses  
+%\usepackage[utf8]{inputenc} %unicode support
+%\usepackage{epsfig}
+\usepackage{color,hyperref,comment, booktabs}
+\urlstyle{rm}
+\newcommand{\cc}{\texttt}
+
+\newcommand{\note}[1]{{\color{red}#1}}
+\title{{\Large \bf Analysing time course microarray data using Bioconductor: a case study using yeast2 Affymetrix arrays}}
+
+\author{Colin S. Gillespie$^{1,2, \dagger}$, Guiyuan Lei$^{1,2, \dagger}$, Richard J. Boys$^{1,2}$,\\
+Amanda Greenall$^{2,3}$ and Darren J. Wilkinson$^{1,2}$}
+
+
+<<echo=FALSE>>=
+opts_chunk$set(prompt = FALSE,fig.path='graphics/', fig.align='center',fig.lp="")
+#knit_hooks$set()
+options(width=90)
+knit_hooks$set(
+    par.nice = function(before, options, envir) {
+        if (before && !is.null(options$par.mfrow)){
+            par(mar=c(3,3,2,1),  mgp=c(2,0.4,0), tck=-.01,
+                cex.lab=.95,cex.axis=0.9, las=1, mfrow=options$par.mfrow)
+            
+        } else if (before) {
+            par(mar=c(3,3,2,1),  mgp=c(2,0.4,0), tck=-.01,
+                cex.lab=.95,cex.axis=0.9, las=1)
+        }
+    }, 
+    crop=hook_pdfcrop)
+
+@
+
+\begin{document}
+\maketitle \thispagestyle{empty}
+\newcommand{\m}{\mbox{}}
+
+\begin{center}
+\noindent $^1${\small School of Mathematics \& Statistics, Newcastle University, Newcastle upon Tyne, NE1 7RU, UK.}\\
+$^2${\small Centre for Integrated Systems Biology of Ageing and Nutrition (CISBAN), Newcastle University, UK.}\\
+$^3${\small Institute for Ageing and Health, Newcastle University, Campus for Ageing and Vitality, Newcastle upon Tyne, NE4 5PL, UK.} \\
+$^{\dagger}${\small Both authors contributed equally to the work.}
+\end{center}
+\begin{abstract}
+% Do not use inserted blank lines (ie \\) until main body of text.
+
+\textbf{Background:} Large scale microarray experiments are becoming
+increasingly routine, particularly those which track a number of different
+cell lines through time. This time-course information provides valuable
+insight into the dynamic mechanisms underlying the biological processes being
+observed. However, proper statistical analysis of time-course data requires
+the use of more sophisticated tools and complex statistical models.
+
+\textbf{Findings:} Using the open source CRAN and Bioconductor repositories
+for R, we provide example analysis and protocol which illustrate a variety of
+methods that can be used to analyse time-course microarray data. In
+particular, we highlight how to construct appropriate contrasts to detect
+differentially expressed genes and how to generate plausible pathways from the
+data. A maintained version of the R commands can be found at
+\url{http://www.mas.ncl.ac.uk/~ncsg3/microarray/}
+
+\textbf{Conclusions:} CRAN and Bioconductor are stable repositories that
+provide a wide variety of appropriate statistical tools to analyse time course
+microarray data.
+\end{abstract}
+
+
+\section{Introduction}
+
+As experimental costs decrease, large scale microarray experiments are becoming
+increasingly routine, particularly those which track a number of different cell
+lines through time. This is because time-course information provides valuable
+insight into the dynamic mechanisms underlying the biological processes being
+observed. However, a proper statistical analysis of time-course data requires
+the use of more sophisticated tools and complex statistical models. For example,
+problems due to multiple comparisons are increased by catering for changing
+effects over time. In this case study, we demonstrate how to analyse time-course
+microarray data by investigating a data set on yeast. We discuss issues related
+to normalisation, extraction of probesets for specific species, chip
+quality,differential expression and network inference. The freely available
+software system R (see \cite{R, Gentleman04}) has many benefits for analysing
+data of this type and so throughout the analysis we give the R commands that
+produce the numerical/graphical output shown in this paper. A maintained version
+of the R commands can be found at
+\url{http://www.mas.ncl.ac.uk/~ncsg3/microarray/}
+
+
+
+\subsection{Description of the data}
+
+The data were collected according to the experimental protocol described in
+\cite{Greenall08}. Briefly, three biological replicates were studied on each of
+a wild-type (WT) yeast strain and a strain carrying the \textit{cdc13-1}
+temperature sensitive mutation (in which telomere uncapping is induced by growth
+at temperatures above around 27${^\circ}$C). These replicates were sampled
+initially at 23${^\circ}$C (at which \textit{cdc13-1} has essentially WT
+telomeres) and then at 1, 2, 3 and 4 hours after a shift to 30${^\circ}$C to
+induce telomere uncapping. The thirty resulting RNA samples were hybridised to
+Affymetrix yeast2 arrays. The microarray data are available in the ArrayExpress
+database (see \cite{Parkinson2009}) under accession number E-MEXP-1551 .
+
+
+
+\section{Loading microarray data into Bioconductor}
+
+\subsection{Installing Bioconductor and associated packages}
+
+Assuming that R is already installed, Bioconductor is fairly
+straightforward to obtain installation script, viz:
+
+<<eval=FALSE>>=
+url='http://bioconductor.org/biocLite.R'
+source(url)
+biocLite()
+@ 
+
+\noindent This installs a number of base packages, including \cc{affy}, \cc{affyPLM},
+\cc{limma}, and \cc{gcrma} (see \cite{affy,Bolstad05,Smyth05}). Additional
+non-standard packages can also be easily installed. For example, the additional
+packages needed for this paper can be installed by using
+
+<<eval=FALSE,tidy=FALSE>>=
+##From Bioconductor
+biocLite(c('ArrayExpress', 'Mfuzz', 'timecourse', 'yeast2.db', 
+    'yeast2probe', 'yeast2cdf'))
+##From cran
+install.packages(c('GeneNet', 'gplots'))
+@
+
+\noindent Bioconductor packages are updated regularly on the web and so users
+can easily update their currently installed packages by starting a new
+R session and then using
+
+<<eval=FALSE>>=
+update.packages(repos=biocinstallRepos())
+@ 
+
+\noindent See \cite{Install} for further details on installation. A list of packages
+used in this paper is given in Appendix C.
+
+
+
+\subsection{Entering data into Bioconductor}
+
+The data used in this paper can be downloaded from ArrayExpress into R using the commands
+
+<<eval=TRUE,hide=TRUE,cache=TRUE,message=FALSE>>=
+library(ArrayExpress)
+yeast.raw = ArrayExpress('E-MEXP-1551')
+@
+
+\noindent A brief description of the \cc{yeast.raw} object can be obtained by using the 
+\cc{print(yeast.raw)} command:
+
+{\small\begin{verbatim}
+    AffyBatch object
+    size of arrays=496x496 features (3163 kb)
+    cdf=Yeast_2 (10928 affyids)
+    number of samples=30
+    number of genes=10928
+    annotation=yeast2
+\end{verbatim}}
+\noindent If the Affymetrix microarray data sets have been downloaded into a single directory, then the \cc{.cel} files can be loaded into R using the \cc{ReadAffy} command.
+
+Also available from ArrayExpress are the experimental conditions. However, some preprocessing is necessary:
+
+<<eval=TRUE,cache=TRUE,tidy=FALSE>>=
+ph = yeast.raw@phenoData
+exp_fac = data.frame(data_order = 1:30, 
+    strain = ph@data$Factor.Value..GENOTYPE.,  
+    replicates = ph@data$Factor.Value..INDIVIDUAL.,
+    tps = ph@data$Factor.Value..TIME.)
+levels(exp_fac$strain) = c('m', 'w')
+exp_fac = with(exp_fac, exp_fac[order(strain, replicates, tps), ])
+exp_fac$replicate = rep(1:3, each=5, 2)
+@
+
+\noindent The data frame \cc{exp\_fac} stores all the necessary information, such as strain, time and replicate, which are necessary for the statistical analysis.
+
+Note that there are two yeast species on this chip, \textit{S. pombe}
+and \textit{S. cerevisiae}. Also, amongst the 10,928 probesets (with each
+probeset having 11 probe pairs), there are 5,900 \textit{S. cerevisiae}
+probesets.
+
+\section{Pre-processing}
+
+\subsection{Extraction of S. cerevisiae probesets}
+
+As these microarrays contain probesets for both \textit{S. cerevisiae}
+and \textit{S. pombe}, we first need to extract the \textit{S. cerevisiae}
+data before normalisation. This can be done by filtering out the \textit{
+S. pombe} data using the \verb$s_cerevisiae.msk$ file from the
+Affymetrix website (see \cite{AffymetrixA}). Note that users first need to register with the Affymetrix website before downloading this file. Also note that in our analysis, the transcript id i.e. the systematic orf name (obtained from \cite{AffymetrixB}) is used for genes with no name. 
+
+We obtain a data frame containing lists of \textit{S. cerevisiae} genes, probes and transcripts (using the function \texttt{ExtractIDs()} in Appendix A) as follows
+
+<<eval=TRUE,message=FALSE,warning=FALSE>>=
+#Read in the mask file
+s_cer = read.table('s_cerevisiae.msk', skip=2, 
+stringsAsFactors=FALSE)
+probe_filter = s_cer[[1]]
+source('ExtractIDs.R')
+c_df = ExtractIDs(probe_filter)
+@
+\noindent We also need to restrict the view of \cc{yeast.raw} to the $x-$ and $y-$coordinates of the \textit{S. cerevisiae} probesets in the \cc{cdf} environment by using
+<<eval=TRUE,message=FALSE>>=
+#Get the raw dataset for S. cerevisiae only
+library(affy)
+library(yeast2probe)
+source('RemoveProbes.R')
+cleancdf = cleancdfname(yeast.raw@cdfName)
+RemoveProbes(probe_filter, cleancdf, 'yeast2probe') 
+@
+Note that the commands in \cc{RemoveProbes.R} are listed in Appendix A. Thus the attributes of \cc{yeast.raw}, obtained via
+\cc{print(yeast.raw)}, are now
+{\small\begin{verbatim}
+    AffyBatch object
+    size of arrays=496x496 features (3167 kb)
+    cdf=Yeast_2 (5900 affyids)
+    number of samples=30
+    number of genes=5900
+    annotation=yeast2
+\end{verbatim}}
+\noindent and the number of genes (actually probesets here) is 5,900 now that the \textit{S. pombe} probesets have been removed.
+
+
+\subsection{Data Quality Assessment}
+
+Before any formal statistical analysis, it is important to check for
+data quality. Initially, we might examine the perfect and mismatch
+probe-level data to detect anomalies. Images of the first five arrays can be obtained using
+<<s_fig1,eval=FALSE,tidy=FALSE>>=
+for(i in 1:5){
+    plot_title = paste('Strain: ', exp_fac$strain[i], 
+        'Time: ', exp_fac$tps[i])
+        d = exp_fac$data_order[i]
+    image(yeast.raw[,d], main=plot_title) 
+}
+@
+
+\noindent These commands produce the image shown in Appendix B: Figure \ref{F1A}. Data
+quality can be assessed by examining such images for anything that appears
+non-random such as rings, shadows, lines and strong variations in shade. The
+images for our data set do not appear to have any non-random structure and so
+data quality is probably high.
+
+Another useful quality assessment tool is to examine density plots of
+the probe intensities. The command
+
+<<s_fig2,eval=FALSE,tidy=FALSE>>=
+d = exp_fac$data_order[1:5]
+hist(yeast.raw[,d], lwd=2, 
+     ylab="Density", xlab="Log (base 2) intensities") 
+@
+\noindent produces the image shown in Appendix B: Figure \ref{F2A}. Typically,
+differences in spread and position are corrected by normalisation. However, the
+appearance of significant multi-modality in the distribution or many outlying
+observations are indicative of poor data quality.
+
+Other exploratory data analysis techniques that should be carried
+include MAplots, where two microarrays are compared and their log
+intensity difference for each probe on each gene are plotted against
+their average. Also of interest is to examine RNA degradation (see
+\cite{Bolstad05}), although \cite{Archer06} cast some doubt over the
+validity of this method. For details on how to carry out both of these
+methods in R, see \cite{Alvord07, speedcourse} for detailed
+instructions.
+
+
+\subsection{Normalising Microarray Data}
+
+There are number of methods for normalising microarray data. Two of the most
+popular methods are GeneChip RMA (GCRMA) and Robust Multiple-array Average
+(RMA); see \cite{Irizarry03,Wu04}. Essentially, GCRMA and RMA differ in how they
+deal with background noise, with GCRMA using a more sophisticated correction
+algorithm. However, the approach adopted by GCRMA means that it can be
+time-consuming to use with large data sets in contrast to RMA. A potential
+drawback of using RMA is that it assumes that the overall levels of expression
+are similar for each array. However this assumption may be invalid if, for
+example, mutant cells have a radically different level of transcriptional
+activity than the WT. For further information regarding normalising microarray
+data sets, see for example \cite{Harr06, Labbe07}.
+
+
+Since we have thirty microarray data sets and believe that the levels of transcriptional activity are similar across strains, we will use the RMA normalisation method. This technique normalises
+across the set of hybridizations at the probe level. The data can be
+normalised via
+
+<<eval=TRUE,cache=TRUE,results=FALSE,message=FALSE>>=
+yeast.rma = rma(yeast.raw)
+yeast.matrix = exprs(yeast.rma)[ ,exp_fac$data_order]
+colnames(yeast.matrix) = paste(exp_fac$strain, exp_fac$tps, sep='')
+exp_fac$data_order = 1:30
+@
+
+The normalisation procedure consists of three steps: model-based
+background correction, quantile nomralisation and robust
+averaging. The aim of the quantile normalisation is to make the
+distribution of probe intensities for each array in a set of arrays
+the same. We illustrate its effect by studying boxplots of the raw
+\textit{S. cerevisiae} data against their normalised counterparts
+values, shown in the Appendix B: Figure \ref{F3A}. Boxplots provide a useful graphical
+view of data distributions and contain their median, quartiles,
+maximum and minimum values. The \cc{boxplot} command is in the
+\cc{affyPLM} package and so the figure is produced by using
+
+<<s_fig3,eval=FALSE>>=
+library(affyPLM)
+#Raw data intensities
+boxplot(yeast.raw, col='red', main='', ylim=c(2,16))
+#Normalised intensities
+boxplot(yeast.rma, col='blue', ylim=c(2,16))
+@
+
+\subsection{Principal Component Analysis}
+
+Principal component analysis (PCA) is useful in exploratory data
+analysis as it can reduce the number of variables to consider whilst
+still retaining much of the variability in the data. In particular,
+PCA is useful for identifying patterns in the data. Essentially,
+principal components partition the data into orthogonal linear
+components which explain different contributions to the variability in
+the data. The first component explains the largest contribution to
+variability in the original dataset, that is, retains most
+information, with the second component explaining the next largest
+contribution to variability, and so on. The following commands calculate the principal components
+
+<<eval=TRUE>>=
+yeast.PC = prcomp(t(yeast.matrix))
+yeast.scores = predict(yeast.PC)
+@
+
+\noindent which we can then plot using
+
+<<F1,eval=TRUE, tidy=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="A plot of the first two principal components. The red symbols correspond to the wild-type strain.", par.nice=TRUE>>=
+#Plot of the first two principal components
+plot(yeast.scores[,1], yeast.scores[,2], 
+    xlab='PC 1', ylab='PC 2', 
+    pch=rep(seq(1,5), 6), col=as.numeric(exp_fac$strain))
+legend("bottomleft", pch=1:5, cex=0.6, 
+    c('t 0', 't 60', 't 120', 't 180', 't 240'))
+@
+
+Figure \ref{F1} highlights a clear (and expected) time effect in the mutant
+yeast which is not present in the wild-type strain. In particular,
+mutant samples are clustered by their time points; for example, the
+three mutant replicates at time point~4 are clustered at the bottom
+right of the figure.
+
+\section{Identifying differentially expressed genes}
+
+In this experiment, interest lies in differences in gene expression
+over time between the wild-type and mutant yeast strains. It is
+expected that the wild-type expression level is independent of
+time. Also we anticipate that the mutant expressions at time $t=0$ are
+the same as the wild-type expression level. This hypothesis is
+supported by the PCA plot in Figure~\ref{F1}.
+
+There are currently two main packages available to detect
+differentially expressed genes using this kind of data: the
+\texttt{timecourse} package and the \texttt{limma} package. We illustrate
+how to analyse these data using both packages.
+
+
+\subsection{Using the timecourse package}
+
+This package assesses treatment differences by comparing time-course
+mean profiles allowing for variability both within and between time
+points. It uses the multivariate empirical Bayes model proposed by
+\cite{Tai06}. Further details of the \texttt{timecourse} package can be
+found in \cite{Tai07}. After installing the \texttt{timecourse} package,
+we construct a \texttt{size} matrix describing the replication
+structure using
+<<eval=TRUE,message=FALSE>>=
+library(timecourse)
+size = matrix(3, nrow = 5900, ncol = 2)
+@
+\noindent To extract a list of differentially expressed we calculate the
+Hotelling statistic $\tilde T^2$ via
+<<eval=TRUE,tidy=FALSE, cache=TRUE>>=
+c.grp = as.character(exp_fac$strain)
+t.grp = as.numeric(exp_fac$tps)
+r.grp = as.character(exp_fac$replicate)
+MB.2D = mb.long(yeast.matrix, times = 5, method = '2', 
+    reps = size, condition.grp = c.grp, time.grp = t.grp, 
+    rep.grp = r.grp)
+@
+\noindent The top (say) one hundred genes can be extracted via
+<<eval=TRUE,cache=TRUE>>=
+gene_positions = MB.2D$pos.HotellingT2[1:100]
+gnames = rownames(yeast.matrix)
+gene_probes = gnames[gene_positions]
+@
+\noindent The expression profiles can also be easily obtained. The profile for the top ranked expression is found using
+<<s_fig4,eval=FALSE>>=
+plotProfile(MB.2D, ranking=1, gnames=rownames(yeast.matrix))
+@
+
+\noindent and is shown in the Appendix B: Figure \ref{F4A}.
+
+\subsection{Using the limma package}
+
+The \cc{limma} package uses the moderated $t$-statistic described by
+\cite{Smyth04,Smyth05}. The function \cc{lmFit} within the \cc{limma}
+library fits a linear model for each gene for a given series of
+arrays, where the coefficients of the fitted models describe the
+differences between the RNA sources hybridised to the
+arrays. Precisely, we fit the model $E[y_g] = X \alpha_g$, where
+$y_g=(y_{g,1}, \ldots, y_{g,n})^T$ contains the expression values for
+gene~$g$ across the $n$ arrays, $X$ is a design matrix which describes
+key features of the experimental design used and $\alpha_g$ is the
+coefficient vector for gene~$g$. In the analysis studied here, the
+yeast data consists of data from $n=30$ arrays. The entries in the
+columns of $X$ depend on the experimental design used: there are two
+yeast strains (mutant and wild type), each measured at five separate
+time points, and we are interested in comparing the gene expressions
+between mutant and wild type strains over time. Thus we seek a linear
+model describing the ten strain$\times$time combinations by
+determining values for the ten coefficients in the coefficient vector
+$\alpha_g$. We will label these ten coefficients as (`m0', `m60, `m120',
+`m180', `m240', `w0', `w60', `w120', `w180', `w240'), where the first five
+coefficients represent the levels of the mutant strain at time points
+$t=0,1,2,3,4$ and the remaining five coefficients are the
+equivalent versions for the wild type strain. Statistically speaking,
+the model has a single factor with ten levels. The design matrix $X$
+links these factors to the data in the arrays by having zero entries
+except when an array contributes an observation to a particular
+strain$\times$time combination. For example, array~$26$ measures the
+expression of the first wild type microarray at time $t=0$ and so
+contributes an observation to level `w0', the sixth strain$\times$time
+combination. Thus the entry in row~26, column~6 of the design matrix
+$X(26,6)=1$. Further, the arrays are arranged in groups of three
+replicates. Thus the overall experimental structure
+(\verb$expt_structure$ below) has three arrays on level `m0', then
+three arrays on `m60', and so on.  Setting up the factor levels and the
+design matrix is done in R by using
+
+<<eval=TRUE,tidy=FALSE>>=
+library(limma)
+expt_structure = factor(colnames(yeast.matrix))
+
+#Construct the design matrix
+X = model.matrix(~0 + expt_structure)
+colnames(X) =  c('m0', 'm60', 'm120', 'm180', 'm240', 
+    'w0', 'w60', 'w120', 'w180', 'w240')
+@
+
+\noindent and then the coefficient vector $\alpha_g$ is estimated via the command
+
+<<eval=TRUE,cache=TRUE>>=
+lm.fit = lmFit(yeast.matrix, X) 
+@
+
+Determining the differentially expressed genes amounts to studying
+contrasts of the various strain$\times$time levels, as described by
+a contrast matrix $C$. For these data, we are mainly interested in
+differences at the later time points, and so a possible set of
+contrasts to investigate is that of differences between the mutant and
+wild type strains at each time point, that is, \texttt{('m60-w60', 'm120-w120', 'm180-w180', 'm240-w240')}. The \verb"limma" package allows complete flexibility over the choice of contrasts, however this necessarily includes an additional level of complexity. The values in the coefficient
+vector of contrasts, $\beta_g=C^T \alpha_g$ for gene~$g$, describe the
+size of the difference between strains at each time point. The
+relevant R commands are
+
+<<eval=TRUE,cache=TRUE>>=
+mc = makeContrasts('m60-w60', 'm120-w120', 'm180-w180', 'm240-w240', levels=X)
+c.fit = contrasts.fit(lm.fit, mc)
+eb = eBayes(c.fit)
+@
+
+The final command uses the \cc{eBayes} function to produce moderated
+$t$-statistics which assess whether individual contrast values
+$\beta_{gj}$ are plausibly zero, corresponding to no significant evidence of a
+difference between strains at time point~$j$. The moderated $t$-statistic is constructed using a shrinkage approach and so is not as sensitive as the standard $t$-statistic to small sample sizes. It also gives a
+moderated $F$-statistic which can be used to test whether all
+contrasts are zero simultaneously, that is, whether there is no
+difference between strains at all time points.
+
+
+\subsection{Ranking differentially expressed genes}
+
+There are a number of ways to rank the differentially expressed
+genes. For example, they can be ranked according to their log-fold
+change
+
+<<eval=TRUE,results='hide',cache=TRUE>>=
+#see help(toptable) for more options
+toptable(eb, sort.by='logFC') 
+@
+
+\noindent or by using $F$-statistics
+
+<<eval=TRUE, results='hide',cache=TRUE>>=
+topTableF(eb)
+@
+
+\noindent The advantage of using $F$-statistics over the log fold change is that the $F$-statistic takes into account variability and reproducibility, in addition to fold-change.
+
+Our analysis is based on a large number of statistical tests, and so we must correct for this multiple testing. In our example we use the (very) conservative Bonferroni correction since we have a large number of differentially expressed genes and the resulting corrected list is still long. Another common method of correcting for multiple testing is to use the false discovery rate (fdr) (use the command \texttt{?p.adjust} to obtain further details). The following commands rank genes according to
+their (corrected) $F$-statistic $p$-value and annotates the output by
+indicating the direction of the change for each contrast for each
+gene: $+1$ for up-regulated expression (mutant type having higher
+expression than wild type at a particular time point), $-1$ for
+down-regulated expression and $0$ for no significant change.
+
+<<eval=TRUE,cache=TRUE,tidy=FALSE>>=
+modFpvalue = eb$F.p.value
+##Change 'bonferroni' to 'fdr' to use the 
+##false discovery rate as a cut-off
+indx = p.adjust(modFpvalue, method='bonferroni') < 0.05
+sig = modFpvalue[indx]
+
+#No. of sig. differential expressed genes
+nsiggenes = length(sig) 
+results = decideTests(eb, method='nestedF')
+
+modF = eb$F
+modFordered = order(modF, decreasing = TRUE)
+
+#Retrieve the significant probes and genes
+c_rank_probe = c_df$probe[modFordered[1:nsiggenes]]
+c_rank_genename = c_df$genename[modFordered[1:nsiggenes]]
+
+#Create a list and write to a file
+updown = results[modFordered[1:nsiggenes],]
+write.table(cbind(c_rank_probe, c_rank_genename, updown), 
+    file='updown.csv', sep=',', 
+    row.names=FALSE, col.names=FALSE)
+@
+
+
+The following code (adapted from lecture material found at
+\cite{speedcourse}) plots the time course expression for the top
+one hundred differentially expressed genes according to their
+$F$-statistic (see Figure~\ref{F2})
+
+<<F2,eval=TRUE,echo=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=5,out.width="0.8\\textwidth",fig.cap="Time course expression levels for the top 9 differentially expressed genes, ranked by their $F$-statistic. The triangles and circles correspond to the wild-type and mutant genes respectively.",par.nice=TRUE, par.mfrow=c(3,3), tidy=FALSE>>=
+
+for(i in 0:8){
+    indx = rank(modF) == nrow(yeast.matrix)-i
+    
+    id = c_df$probe[indx]
+    name = c_df$genename[indx]
+    exprs.row = yeast.matrix[indx,]
+    genetitle = paste(sprintf('%.30s', id), sprintf('%.30s', name), 
+                      'Rank =', i+1) 
+
+    plot(0, pch=NA, xlim=range(0, 240), ylim=range(exprs.row), 
+         ylab='Expression', xlab='Time', main=genetitle,
+         cex.main=0.7)
+    
+    for(j in 1:6){
+        pch_value = as.character(exp_fac$strain[5*j])
+        points(c(0, 60, 120, 180, 240), exprs.row[(5*j-4):(5*j)], 
+               type='b', pch=pch_value)
+    }  
+} 
+@
+
+<<eval=FALSE, tidy=FALSE>>=
+#Rank of Probesets, also output gene names
+par(mfrow=c(3, 3), ask=TRUE)
+for(i in 0:99){
+    indx = rank(modF) == nrow(yeast.matrix) - i
+    id = c_df$probe[indx]
+    name = c_df$genename[indx]
+    exprs.row = yeast.matrix[indx,]
+    genetitle = paste(sprintf('%.30s', id), sprintf('%.30s', name), 
+                      'Rank =', i+1) 
+    
+    plot(0, pch=NA, xlim=range(0, 240), ylim=range(exprs.row), 
+         ylab='Expression', xlab='Time', main=genetitle)
+    
+    for(j in 1:6){
+        pch_value = as.character(exp_fac$strain[5*j])
+        points(c(0, 60, 120, 180, 240), exprs.row[(5*j-4):(5*j)], 
+               type='b', pch=pch_value)
+    }  
+} 
+@
+
+When interpreting rank orderings based on statistical significance, it
+is important to bear in mind that a statistically significant
+differential expression is not always biologically meaningful. For
+example, Figure~\ref{F2} contains \textit{RNR2}. This gene is highly
+significant because of low variation in its time course. However the
+actual difference in expression levels between wild-type and mutant
+stains is relatively small. We address this problem in the next
+section.
+
+\subsection*{Comparison of the \cc{timecourse} and \cc{limma} packages}
+
+Both packages have different strengths. One advantage of
+the \verb"timecourse" package over the \verb"limma" package is that it
+allows for correlation between repeated measurements on the same experimental unit, thereby reducing false
+positives and false negatives; these false positives/negatives are a
+significant problem when the variance-covariance matrix is poorly
+estimated. An advantage of the \cc{limma} package is that it allows
+more flexibility by allowing users to construct different
+contrasts. In general we might expect both packages to produce fairly
+similar lists of say the top 100 probesets. In the analysis of the
+yeast data, we can determine the overlap of the top 100 probesets by
+using
+
+<<eval=TRUE, cache=TRUE>>=
+N = 100
+gene_positions = MB.2D$pos.HotellingT2[1:N]
+tc_top_probes = gnames[gene_positions]
+lm_top_probes = c_df$probe[modFordered[1:N]]
+length(intersect(tc_top_probes, lm_top_probes))
+@
+
+\noindent The result is a moderately large overlap of fifty-three probesets. We
+note that changing the ranking method in the \texttt{limma} package also
+yields similar results as those given by the
+\texttt{timecourse} package.
+
+
+\subsection{Two fold-change list} 
+
+
+When looking for ``interesting'' genes it can be helpful to restrict
+attention to those differential expressed that are both statistically
+significant and of biological interest. This objective can be achieved
+by considering only significant genes which show, say, at least a
+two-fold change in their expression level. This gene list is obtained using the following code (adapted from \cite{Alvord07})
+
+<<eval=TRUE,cache=TRUE>>=
+#Obtain the maximum fold change but keep the sign 
+maxfoldchange = function(foldchange)
+foldchange[which.max(abs(foldchange))]  
+difference = apply(eb$coeff, 1, maxfoldchange)
+pvalue = eb$F.p.value
+lodd = -log10(pvalue)
+
+#hfc: high fold-change
+nd = (abs(difference)>log(2, 2))
+ordered_hfc = order(abs(difference), decreasing=TRUE)
+hfc = ordered_hfc[1:length(difference[nd])]
+
+np = p.adjust(pvalue, method='bonferroni') < 0.05
+
+#lpv: low p-value (large F-value)
+ordered_lpv = order(abs(pvalue), decreasing=FALSE)
+lpv = ordered_lpv[1:length(pvalue[np])] 
+
+oo = union(lpv, hfc) 
+ii = intersect(lpv, hfc) 
+@
+
+
+Figure~\ref{F3} contains a ``volcano'' plot which illustrates the effect of using different
+levels of fold change and significance thresholds. The figure is 
+produced by using the following code
+
+<<F3,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Volcano plot showing the bonferroni cut-off and the two-fold change.", nice.par=TRUE,tidy=FALSE>>=
+#Construct a volcano plot using moderated F-statistics
+plot(difference[-oo], lodd[-oo], xlim=range(difference), 
+ylim=range(lodd), cex=0.7)
+points(difference[hfc], lodd[hfc], pch=18, cex=0.7) 
+points(difference[lpv], lodd[lpv], pch=1, cex=0.7)
+
+#Add the cut-off lines
+abline(v=log(2, 2), col=5); abline(v=-log(2, 2), col=5)
+abline(h=-log10(0.05/5900), col=5)
+
+text(min(difference) + 1, -log10(0.05/5900) + 0.2, 
+    'Bonferroni cut off', cex=0.8) 
+text(1, max(lodd) - 1, paste(length(ii), 'intersects'), cex=0.8)
+@
+
+
+ 
+\section{Cluster Analysis} 
+
+
+Biological insight can be gained by determining groups of
+differentially expressed genes, that is, groups of genes which
+increase or decrease simultaneously. This can be achieved by using
+cluster analysis. 
+
+\subsection{Traditional cluster analysis}
+
+In this section, we separate the top fifty differentially expressed
+genes into groups of similar pattern (clusters). Clearly different
+genes will have different overall levels of expression and so we first
+standardise their measurements by taking the expression level of the
+mutant strain (at each time point) relative to the wild-type at time
+$t=0$:
+
+<<eval=TRUE>>=
+c_probe_data = yeast.matrix[ii,]
+#Average of WT
+wt_means = apply(c_probe_data[,16:30], 1, mean)
+m = matrix(nrow=dim(c_probe_data)[1], ncol=5)
+
+for(i in 1:5){
+    mut_rep = c(i, i+5, i+10)
+    m[ ,i] = rowMeans(c_probe_data[ ,mut_rep]) - wt_means
+}
+colnames(m) = sort(unique(exp_fac$tps))
+@
+
+\noindent The heatmap in Figure~\ref{F4} is
+obtained by using the function \cc{heatmap.2} from the library
+\cc{gplots} via the following code
+
+<<F4,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Clustering of the top fifty differentially expressed genes. Red and green correspond to up- and down-regulation respectively.",message=FALSE, nice.par=TRUE,tidy=FALSE>>=
+library(gplots)
+#Cluster the top 50 genes
+heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
+          key=FALSE, keysize=1.0, symkey=FALSE, density.info='none', 
+          trace='none', colsep=rep(1:10), sepcolor='white', 
+          sepwidth=0.05, labRow = NA, cexCol=1,
+          hclustfun=function(c){hclust(c, method='average')})
+@
+
+
+Figure \ref{F4} shows the relative expression levels for the mutant strain
+at each time point (`0', `60', `120', `180', `240'). As expected, the
+relative expression levels at time $t=0$ are very similar. However, as
+time progresses, groupings of genes appear whose levels are
+up-regulated (red) or down-regulated (green). Note that the intensity
+of the colour corresponds to the magnitude of the relative expression. Gene
+names appear on the right side of the figure and on the left side, the
+cluster dendrogram shows which genes have similar expression. The
+dendrogram suggests that there are perhaps six to ten clusters.
+
+\subsection{Soft clustering}
+
+Soft clustering methods have the advantage that a probe can be
+assigned to more than one cluster. Furthermore, it is possible to
+grade cluster membership within particular groupings. Soft clustering
+is considered more robust when dealing with noisy data; for more details
+see \cite{Futschik05,Futschik07}. The \cc{Mfuzz} package
+implements soft clustering using a fuzzy c-means algorithm. Analysing
+the data for $c=8$ clusters is achieved by using
+
+<<F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \texttt{Mfuzz} package.",message=FALSE>>=
+library(Mfuzz)
+tmp_expr = new('ExpressionSet', exprs=m)
+cl = mfuzz(tmp_expr, c=8, m=1.25)
+mfuzz.plot(tmp_expr,cl=cl, mfrow=c(2, 4), new.window = FALSE)
+@
+Of course, it is usually not clear how many clusters there are (or
+should be) within a dataset and so the sensitivity of conclusions to
+the choice of number of clusters ($c$) should always be
+investigated. For example, if $c$ is chosen to be too large then some
+clusters will appear sparse and this might suggest choosing a smaller
+value of~$c$. Figure~\ref{F5} shows the profiles of the
+eight clusters obtained from the \cc{Mfuzz} package. The probes 
+present within each cluster can be found by using
+
+<<eval=TRUE,results='hide'>>=
+cluster = 1
+cl[[4]][, cluster] 
+@
+
+ 
+\section{Genetic regulatory network inference}
+
+Recent research in the analysis of microarray experiments has produced
+several methods for determining plausible transcriptional regulation networks from the data; see,
+for example, \cite{Dobra04,Husmeier03,Yu04,Lee04}. Such networks can
+provide valuable insight into the underlying biological mechanisms
+producing the data. The networks typically consist of nodes
+(representing genes or proteins) and edges between nodes (representing
+relationships between genes). Methods also exist for inferring dynamic
+gene association networks in which the direction of causation is
+represented by an arrow. One such method (with an easy-to-use R
+package developed by the Strimmer lab) uses a shrinkage approach to
+calculate the partial correlation coefficient and works for both
+static and dynamic (time-course) data; see \cite{Strimmer05,
+Strimmer06, Strimmer07}. Their heuristic algorithm is fast and so
+provides a quick insight in the structure of the network. It works by
+first creating a \cc{longitudinal} R object. In our illustration, we
+use data on the top one hundred differentially expressed genes. The
+data are stored in a matrix \cc{m}, where the rows are genes and the
+fifthteen columns are the arrays. In order to use the R functions in
+their package, as we have time course data rearrange the row order according to the time points. The first three
+rows of the resulting matrix \cc{mnew} are data on the three mutant arrays at
+time $t=0$, the next three arrays at time point $t=60$, and so on. This
+is achieved by using the commands
+
+<<eval=TRUE,cache=TRUE, results='hide'>>=
+exp_fac = with(exp_fac, exp_fac[order(strain, tps, replicates), ])
+#Construct a longitudinal object
+library(GeneNet)
+ngenes = 100
+m = yeast.matrix[ii[1:ngenes],]
+mnew = m[,exp_fac$data_order[1:15]]
+mlong = as.longitudinal(t(mnew), repeats=3, time=0:4)
+@
+ 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{graphics/network.jpg}
+\caption{Gene network inferred from the yeast microarray data
+set. Black and grey indicate positive and negative (partial)
+correlation respectively.}
+\label{F6}
+\end{figure}
+\noindent Next the partial correlations are computed and then (local) values are
+assigned to all possible edges, from which the important edges can be
+determined according to a threshold criteria. Finally a
+Graphviz\footnote{See \url{http://www.graphviz.org/} for details.} file is
+outputted to generate the graph. Figure~\ref{F6} shows the resulting
+network for these data and is generated by using
+
+<<eval=FALSE,cache=TRUE,message=FALSE,results='hide'>>=
+#Compute partial correlations
+pcor.dyn = ggm.estimate.pcor(mlong, method = 'dynamic')
+ 
+#Assign (local) fdr values to all possible edges
+m.edges = network.test.edges(pcor.dyn, direct=TRUE)
+
+#Construct graph containing top edges
+m.net = extract.network(m.edges, method.ggm='number', 
+cutoff.ggm=100)
+
+#Construct a Graphviz dot file
+rnames = vector('list', length(1))
+rnames = c_df$genename[ii[1:ngenes]]
+network.make.dot(filename='net.dot', m.net, rnames, 
+    main='Yeast Network')
+@
+
+\noindent Note that, in the function \cc{ggm.estimate.pcor}, the default method
+\cc{static} employs the function \cc{pcor.shrink}, whereas the
+\cc{dynamic} method uses \cc{dyn.pcor}. The difference between the two
+estimators is that the latter takes the spacings between time points
+into account if the input consists of multiple time course data (which
+must be provided as a \cc{longitudinal} object).
+
+\section{Conclusion}
+
+The response to telomere uncapping in \textit{cdc13-1} strains was expected to
+share features in common with responses to cell cycle progression,
+environmental stress, DNA damage and other types of telomere
+damage. The statistical analysis determined lists of probesets
+associated with genes involved in all of these processes. The
+techniques used focussed on making best use of the temporal
+information in time-course data.  The use of \textit{cdc13-1} strains, which
+uncap telomeres quickly and synchronously, also allowed the
+identification of genes involved in the acute response to telomere
+damage. This case study has demonstrated the power of R/Bioconductor
+to analyse time-course microarray data. Whilst the statistical
+analysis of such data is still an active research area, this paper
+presents some of the cutting-edge tools that are available to the life
+science community.  All software discussed in this article is free,
+with many of the packages being open-source and subject to on-going
+development.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Competing interests}
+
+The authors declare that they have no competing interests.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Authors contributions}
+
+AG conducted the microarray experiments. All authors participated
+in the analysis of the data and in the writing of the manuscript. CSG maintains this document.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgements}
+
+We wish to thank Dan Swan (Newcastle University Bioinformatics Support Unit) and David Lydall for helpful
+discussions. The authors are affiliated with the Centre for Integrated
+Systems Biology of Ageing and Nutrition (CISBAN) at Newcastle
+University, which is supported jointly by the Biotechnology and
+Biological Sciences Research Council (BBSRC) and the Engineering and
+Physical Sciences Research Council (EPSRC).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\appendix
+
+\section{R commands for extracting S. cerevisiae ids, removing unwanted probesets and converting probesets to genes}
+
+\medskip
+
+\subsection*{R function for extracting S. cerevisiae ids}
+
+
+As these microarrays contain probesets for both \textit{S. cerevisiae}
+and \textit{S. pombe}, we first need to extract the \textit{S. cerevisiae}
+data before normalisation. This can be done by filtering out the \textit{
+S. pombe} data using the \verb$s_cerevisiae.msk$ file from the
+Affymetrix website (see \cite{AffymetrixA}). Note that the transcript
+id, i.e. the systematic orf name (obtained from \cite{AffymetrixB}) will be used for genes with no
+name.
+
+<<ExtractIDs>>=
+@
+
+\clearpage
+
+\subsection*{R function for removing unwanted probesets}
+
+If an Affymetrix microarray chip contains more than one species then
+it can be useful to focus on a particular species and filter out the
+unwanted probesets. For example, the \cc{yeast2.db} Affymetrix chip
+contains both \textit{S. pombe} and \textit{S. cerevisiae} yeast
+species. To filter out the \textit{S. pombe} probesets, we remove the
+mappings from the $x-$, $y-$coordinates to the \textit{S. pombe}
+probesets in the cdf environment. The following function
+(adapted from \cite{Alvord07}) removes the unwanted \textit{S. pombe}
+instances:
+
+<<RemoveProbes>>=
+@
+
+\clearpage
+
+\subsection*{Probeset level to gene level}
+
+It is worth noting that RMA yields probeset expression
+levels. However, there can be several probesets that map to a single
+gene in an Affymetrix array. If gene level expression is required
+(instead of probeset expression) the following code will average over
+probesets for each gene
+
+<<eval=FALSE>>=
+#Function to average the expression of 
+#probesets which map to same gene
+probeset2genelevel = function(onesample)
+    return(tapply(onesample, factor(c_df$genename), mean))
+
+#Average for each column/array
+c_gene_data = apply(exprs(yeast.rma), 2, probeset2genelevel)
+@
+
+For the \textit{S. cerevisiae} data, the majority of genes only have a
+single probeset. However, thirty five genes have two or three
+associated probesets.  In this case study, we will study genes at the
+probeset level.
+\clearpage
+
+
+\section{Additional figures}
+ 
+
+
+<<F1A,eval=TRUE,dev="png",fig.ext="png",cache=TRUE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h">>=
+par(mar=c(3,3,2,1), 
+           mgp=c(2,0.4,0), tck=-.01,
+               cex.axis=0.9, las=1, mfrow=c(2,3))
+run_chunk("s_fig1")
+@
+
+ \bigskip
+ 
+<<F2A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Density plots for the first replication of the mutant yeast strain.",nice.par=TRUE,message=FALSE>>=
+par(mar=c(3,3,2,1), 
+           mgp=c(2,0.4,0), tck=-.01,
+               cex.axis=0.9, las=1)
+run_chunk("s_fig2")
+@
+
+<<F3A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Boxplots of the raw and normalised intensities. The default boxplot is to include both PM and MM intensities, whereas for the density plots in Figure~\ref{F2} the default is for only the PM intensities.">>=
+par(mar=c(3,3,2,1), 
+           mgp=c(2,0.4,0), tck=-.01,
+               cex.axis=0.9, las=1, mfrow=c(1,2))
+run_chunk("s_fig3")
+@
+ 
+\bigskip
+<<F4A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Time course expression levels for the top differentially expressed gene, ranked by their Hotelling statistic using the \texttt{timecourse} library.">>=
+par(mar=c(3,3,2,1), 
+           mgp=c(2,0.4,0), tck=-.01,
+               cex.axis=0.9, las=1)
+run_chunk("s_fig4")
+@ 
+
+\clearpage
+
+\section{List of R packages}
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+Package & Version & Package & Version \\
+\midrule
+affy & \Sexpr{packageDescription("affy")$Version}   & IRanges & \Sexpr{packageDescription("IRanges")$Version} \\
+affyPLM & \Sexpr{packageDescription("affyPLM")$Version}  & limma & \Sexpr{packageDescription("limma")$Version} \\
+AnnotationDbi & \Sexpr{packageDescription("AnnotationDbi")$Version} & Mfuzz & \Sexpr{packageDescription("Mfuzz")$Version} \\
+ArrayExpress & \Sexpr{packageDescription("ArrayExpress")$Version} & timecourse & \Sexpr{packageDescription("timecourse")$Version}  \\
+Biobase & \Sexpr{packageDescription("Biobase")$Version}  & yeast2probe & \Sexpr{packageDescription("yeast2probe")$Version} \\
+Biostrings & \Sexpr{packageDescription("Biostrings")$Version} & yeast2cdf & \Sexpr{packageDescription("yeast2cdf")$Version} \\
+gcrma & \Sexpr{packageDescription("gcrma")$Version}  & \\
+\bottomrule
+\end{tabular}
+\caption{List of packages from Bioconductor used in this paper.}\label{AT.1}
+\end{table}
+
+<<echo=FALSE>>=
+#library()
+@
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+Package & Version & Package & Version \\
+\midrule
+bitops & \Sexpr{packageDescription("bitops")$Version}  & GeneNet & \Sexpr{packageDescription("GeneNet")$Version} \\
+caTools & \Sexpr{packageDescription("caTools")$Version} & gplots & \Sexpr{packageDescription("gplots")$Version} \\ 
+corpcor & \Sexpr{packageDescription("corpcor")$Version} & grid & \Sexpr{packageDescription("grid")$Version} \\
+e1071 & \Sexpr{packageDescription("e1071")$Version}  & gtools & \Sexpr{packageDescription("gtools")$Version}  \\
+fdrtool & \Sexpr{packageDescription("fdrtool")$Version} & MASS & \Sexpr{packageDescription("MASS")$Version} \\
+gdata & \Sexpr{packageDescription("gdata")$Version}  & longitudinal &
+\Sexpr{packageDescription("longitudinal")$Version}  \\
+\bottomrule
+
+\end{tabular}
+\caption{List of packages from the CRAN repository used in this paper.}\label{AT.2}
+
+\end{table}
+
+<<eval=TRUE>>=
+version
+@ 
+
+
+
+\clearpage
+
+
+
+
+%{\ifthenelse{\boolean{publ}}{\footnotesize}{\small}
+\bibliographystyle{bmc_article}  % Style BST file
+\bibliography{refs}      % Bibliography file (usually '*.bib' ) 
+
+%%%%%%%%%%%
+
+
+
+
+
+
+
+
+\end{document}
+
+
+
+
+
+
