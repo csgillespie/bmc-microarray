@@ -2,15 +2,15 @@
 ExtractIDs = function(probe_filter) {
     #probe_filter: a vector of S. cerevisiae genes
     #Get both S. pombe & S. cerevisiae ids from yeast2GENENAME library
-    library(yeast2.db)
+    require(yeast2.db)
     genenames = as.list(yeast2GENENAME)
     probes = names(genenames) 
     
     #Get all transcript ids from yeast2annotation.csv
     annotations = read.csv(file='yeast2annotation.csv', header=TRUE, 
                            stringsAsFactors=FALSE)
-    transcript_id = annotations[,3]
-    probeset_id = annotations[,1]
+    transcript_id = annotations[ ,3]
+    probeset_id = annotations[ ,1]
     
     #Reorder the transcript_id to match probes
     transcript_id = transcript_id[match(probes, probeset_id)]

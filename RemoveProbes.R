@@ -3,7 +3,6 @@ RemoveProbes=function(listOutProbeSets, cdfpackagename, probepackagename){
     #listOutProbeSets: Probes sets that are removed.
     #cdfpackagename: The cdf package name.  
     #probepackagename: The probe package name.
-    
     require(cdfpackagename, character.only=TRUE)
     require(probepackagename, character.only=TRUE)
     
