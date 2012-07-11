@@ -34,7 +34,8 @@ knit_hooks$set(
         }
     }, 
     crop=hook_pdfcrop)
-
+read_chunk('ExtractIDs.R')
+read_chunk('RemoveProbes.R')
 @
 
 \begin{document}
@@ -787,7 +788,7 @@ rows of the resulting matrix \cc{mnew} are data on the three mutant arrays at
 time $t=0$, the next three arrays at time point $t=60$, and so on. This
 is achieved by using the commands
 
-<<eval=TRUE,cache=TRUE, results='hide'>>=
+<<eval=TRUE,results='hide',message=FALSE>>=
 exp_fac = with(exp_fac, exp_fac[order(strain, tps, replicates), ])
 #Construct a longitudinal object
 library(GeneNet)
@@ -892,12 +893,12 @@ Physical Sciences Research Council (EPSRC).
 As these microarrays contain probesets for both \textit{S. cerevisiae}
 and \textit{S. pombe}, we first need to extract the \textit{S. cerevisiae}
 data before normalisation. This can be done by filtering out the \textit{
-S. pombe} data using the \verb$s_cerevisiae.msk$ file from the
+S. pombe} data using the \texttt{s\_cerevisiae.msk} file from the
 Affymetrix website (see \cite{AffymetrixA}). Note that the transcript
 id, i.e. the systematic orf name (obtained from \cite{AffymetrixB}) will be used for genes with no
 name.
 
-<<ExtractIDs>>=
+<<ExtractIDs,tidy=FALSE>>=
 @
 
 \clearpage
@@ -914,7 +915,7 @@ probesets in the cdf environment. The following function
 (adapted from \cite{Alvord07}) removes the unwanted \textit{S. pombe}
 instances:
 
-<<RemoveProbes>>=
+<<RemoveProbes,tidy=FALSE>>=
 @
 
 \clearpage
@@ -964,7 +965,7 @@ par(mar=c(3,3,2,1),
 run_chunk("s_fig2")
 @
 
-<<F3A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Boxplots of the raw and normalised intensities. The default boxplot is to include both PM and MM intensities, whereas for the density plots in Figure~\ref{F2} the default is for only the PM intensities.">>=
+<<F3A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.8\\linewidth",echo=FALSE, message=FALSE,fig.cap="Boxplots of the raw and normalised intensities. The default boxplot is to include both PM and MM intensities, whereas for the density plots in Figure~\ref{F2} the default is for only the PM intensities.">>=
 par(mar=c(3,3,2,1), 
            mgp=c(2,0.4,0), tck=-.01,
                cex.axis=0.9, las=1, mfrow=c(1,2))
@@ -1043,6 +1044,10 @@ version
 
 %%%%%%%%%%%
 
+<<echo=FALSE>>=
+library(knitr)
+purl("paper.Rnw")
+@
 
 
 
