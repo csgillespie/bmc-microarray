@@ -25,3 +25,6 @@
 *.maf
 *.mtc
 *.mtc0
+.Rproj.user
+indexE*.html
+cache
