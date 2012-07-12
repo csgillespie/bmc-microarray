@@ -21,7 +21,7 @@ Amanda Greenall$^{2,3}$ and Darren J. Wilkinson$^{1,2}$}
 <<echo=FALSE>>=
 opts_chunk$set(prompt = FALSE,fig.path='graphics/', fig.align='center',fig.lp="")
 #knit_hooks$set()
-options(width=90)
+options(width=75)
 knit_hooks$set(
     par.nice = function(before, options, envir) {
         if (before && !is.null(options$par.mfrow)){
@@ -161,11 +161,11 @@ yeast.raw = ArrayExpress('E-MEXP-1551')
 
 {\small\begin{verbatim}
     AffyBatch object
-    size of arrays=496x496 features (3163 kb)
-    cdf=Yeast_2 (10928 affyids)
-    number of samples=30
-    number of genes=10928
-    annotation=yeast2
+    size of arrays = 496x496 features (3163 kb)
+    cdf = Yeast_2 (10928 affyids)
+    number of samples = 30
+    number of genes = 10928
+    annotation = yeast2
 \end{verbatim}}
 \noindent If the Affymetrix microarray data sets have been downloaded into a single directory, then the \cc{.cel} files can be loaded into R using the \cc{ReadAffy} command.
 
@@ -205,9 +205,8 @@ We obtain a data frame containing lists of \textit{S. cerevisiae} genes, probes 
 #Read in the mask file
 s_cer = read.table('s_cerevisiae.msk', skip=2, 
 stringsAsFactors=FALSE)
-probe_filter = s_cer[[1]]
 source('ExtractIDs.R')
-c_df = ExtractIDs(probe_filter)
+c_df = ExtractIDs(s_cer[ ,1])
 @
 \noindent We also need to restrict the view of \cc{yeast.raw} to the $x-$ and $y-$coordinates of the \textit{S. cerevisiae} probesets in the \cc{cdf} environment by using
 <<eval=TRUE,message=FALSE>>=
@@ -216,17 +215,17 @@ library(affy)
 library(yeast2probe)
 source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
-RemoveProbes(probe_filter, cleancdf, 'yeast2probe') 
+RemoveProbes(s_cer[ ,1], cleancdf, 'yeast2probe') 
 @
 Note that the commands in \cc{RemoveProbes.R} are listed in Appendix A. Thus the attributes of \cc{yeast.raw}, obtained via
 \cc{print(yeast.raw)}, are now
 {\small\begin{verbatim}
     AffyBatch object
-    size of arrays=496x496 features (3167 kb)
-    cdf=Yeast_2 (5900 affyids)
-    number of samples=30
-    number of genes=5900
-    annotation=yeast2
+    size of arrays = 496x496 features (3167 kb)
+    cdf = Yeast_2 (5900 affyids)
+    number of samples = 30
+    number of genes = 5900
+    annotation = yeast2
 \end{verbatim}}
 \noindent and the number of genes (actually probesets here) is 5,900 now that the \textit{S. pombe} probesets have been removed.
 
@@ -236,7 +235,7 @@ Note that the commands in \cc{RemoveProbes.R} are listed in Appendix A. Thus the
 Before any formal statistical analysis, it is important to check for
 data quality. Initially, we might examine the perfect and mismatch
 probe-level data to detect anomalies. Images of the first five arrays can be obtained using
-<<s_fig1,eval=FALSE,tidy=FALSE>>=
+<<s_fig1,eval=FALSE,tidy=TRUE>>=
 for(i in 1:5){
     plot_title = paste('Strain: ', exp_fac$strain[i], 
         'Time: ', exp_fac$tps[i])
@@ -256,8 +255,7 @@ the probe intensities. The command
 
 <<s_fig2,eval=FALSE,tidy=FALSE>>=
 d = exp_fac$data_order[1:5]
-hist(yeast.raw[,d], lwd=2, 
-     ylab="Density", xlab="Log (base 2) intensities") 
+hist(yeast.raw[,d], lwd=2, ylab="Density", xlab="Log (base 2) intensities") 
 @
 \noindent produces the image shown in Appendix B: Figure \ref{F2A}. Typically,
 differences in spread and position are corrected by normalisation. However, the
@@ -341,9 +339,8 @@ yeast.scores = predict(yeast.PC)
 
 <<F1,eval=TRUE, tidy=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="A plot of the first two principal components. The red symbols correspond to the wild-type strain.", par.nice=TRUE>>=
 #Plot of the first two principal components
-plot(yeast.scores[,1], yeast.scores[,2], 
-    xlab='PC 1', ylab='PC 2', 
-    pch=rep(seq(1,5), 6), col=as.numeric(exp_fac$strain))
+plot(yeast.scores[,1], yeast.scores[,2], xlab='PC 1', ylab='PC 2', 
+    pch=rep(1:5, 6), col=as.numeric(exp_fac$strain))
 legend("bottomleft", pch=1:5, cex=0.6, 
     c('t 0', 't 60', 't 120', 't 180', 't 240'))
 @
@@ -998,14 +995,11 @@ sessionInfo()
 
 %%%%%%%%%%%
 
-<<echo=FALSE>>=
-library(knitr)
-purl("paper.Rnw")
-@
-
-
-
-
+% Not possible to call purl within a knitr document.
+% <<echo=FALSE>>=
+% library(knitr)
+% purl("paper.Rnw")
+% @
 
 
 
