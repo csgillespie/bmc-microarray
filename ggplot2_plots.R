@@ -96,6 +96,14 @@ ggplot(rbind(dd_g, dd_rma)) +
     xlab("Log (base 2) intensities")
 
 
+############################################
+#Figure 4: timecourse package ##############
+############################################
+# gene_positions = MB.2D$pos.HotellingT2[1:1]
+# gnames = rownames(yeast.matrix)
+# gene_probes = gnames[gene_positions]
+# 
+# exprs(yeast.rma)[gene_positions,]
 
 
 
