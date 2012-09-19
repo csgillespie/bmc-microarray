@@ -54,29 +54,46 @@ ggplot(dd_g) +
 ##Figure 3 in supplemental material##
 #####################################
 ##getMethod("boxplot","AffyBatch")
-#Default switches to both for boxplots?
-Index = unlist(indexProbes(yeast.raw[,1], which = "pm"))
-intensities = as.vector(intensity(yeast.raw[,1])[Index, , drop = FALSE])
+##getMethod("boxplot","ExpressionSet")
+##The boxplots also have range set to 0.
+##This corresponds to Inf in ggplot2. 
+##Default is 1.5
+Index = unlist(indexProbes(yeast.raw, which = "pm"))
+intensities = as.vector(intensity(yeast.raw)[Index, , drop = FALSE])
 no_of_probes = length(intensities)/30
 
 #Construct a data frame for ggplot2
-dd_g = data.frame(intensities=log2(intensities), 
+dd_raw = data.frame(intensities=log2(intensities),
     tps = rep(exp_fac$tps, each=no_of_probes),
     replicate = factor(rep(exp_fac$replicate, each=no_of_probes)),
     strain = rep(exp_fac$strain, each=no_of_probes))
+dd_raw$type = "Raw"
+dd_rma = data.frame(intensities=as.vector(exprs(yeast.rma)),
+                    tps = rep(exp_fac$tps, each=no_of_probes),
+                    replicate = factor(rep(exp_fac$replicate, each=no_of_probes)),
+                    strain = rep(exp_fac$strain, each=no_of_probes))
+dd_rma$type = "RMA"
 
-ggplot(dd_g) + 
-    geom_boxplot(aes(y=intensities, x=replicate, group=replicate), 
-                 range=0) + 
+##Boxplots of dd_raw
+ggplot(dd_raw) + 
+    stat_boxplot(aes(y=intensities, x=replicate), coef=Inf) +
     facet_grid(tps ~ strain) +  
     ylab("Density") + 
     xlab("Log (base 2) intensities") 
 
-#Normalised intensities
-#boxplot(yeast.rma, col='blue', ylim=c(2,16))
+##Boxplots of dd_rma
+ggplot(dd_rma) + 
+    stat_boxplot(aes(y=intensities, x=replicate), coef=100) + 
+    facet_grid(tps ~ strain) +  
+    ylab("Density") + 
+    xlab("Log (base 2) intensities") 
 
-
-
+##Boxplots of box raw and rma
+ggplot(rbind(dd_g, dd_rma)) + 
+    stat_boxplot(aes(y=intensities, x=replicate,  colour=type), coef=100) + 
+    facet_grid(tps ~ strain) +  
+    ylab("Density") + 
+    xlab("Log (base 2) intensities")
 
 
 
