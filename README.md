@@ -29,9 +29,9 @@ The paper was originally constructed in Sweave (thanks to a referees comment!). 
 ```{r}
 library(knitr)
 fname = 'paper.Rnw'
-knit(f)
+knit(fname)
 ## extract R code only
-purl(f)
+purl(fname)
 ```
 
 Alternatively, you can use an IDE such as RStudio.
