@@ -69,9 +69,8 @@ dd_raw = data.frame(intensities=log2(intensities),
     strain = rep(exp_fac$strain, each=no_of_probes))
 dd_raw$type = "Raw"
 
-no_of_probes = length(exprs(yeast.rma))/30
-
-dd_rma = data.frame(intensities=as.vector(exprs(yeast.rma)),
+no_of_probes = length(as.vector(yeast.matrix))/30
+dd_rma = data.frame(intensities=as.vector(yeast.matrix),
                     tps = rep(exp_fac$tps, each=no_of_probes),
                     replicate = factor(rep(exp_fac$replicate, 
                                            each=no_of_probes)),
@@ -106,11 +105,19 @@ ggplot(rbind(dd_raw, dd_rma)) +
 ############################################
 #Figure 4: timecourse package ##############
 ############################################
-# gene_positions = MB.2D$pos.HotellingT2[1:1]
-# gnames = rownames(yeast.matrix)
-# gene_probes = gnames[gene_positions]
-# 
-# exprs(yeast.rma)[gene_positions,]
+gene_positions = MB.2D$pos.HotellingT2[1:1]
+gnames = rownames(yeast.matrix)
+gene_probes = gnames[gene_positions]
+
+dd = data.frame(values = as.vector(yeast.matrix[gene_positions,]), 
+                strain=exp_fac$strain, 
+                tps = exp_fac$tps, 
+                replicate = exp_fac$replicate)
+
+ggplot(dd, aes(x=tps, y=values)) + 
+    geom_point(aes(colour=strain, shape=factor(replicate)))
+
+plot(yeast.matrix[gene_positions,1:5])
 
 
 
