@@ -1,4 +1,4 @@
-library(ggplot2)
+require(ggplot2)
 
 ##Code for creating ggplot2 versions of the paper figures.
 
@@ -24,15 +24,14 @@ head(dd_g)
 ##scale_ removes tick marks and border
 ggplot(dd_g) + geom_raster(aes(x,y,fill=log2(m)), show_guide=FALSE) + 
     facet_grid(replicate ~ tps) + 
-    opts(axis.text.x=theme_blank(), axis.title.x=theme_blank(), 
-         axis.text.y=theme_blank(), axis.title.y=theme_blank()) +
-    scale_x_continuous(expand=c(0, 0), breaks=NA) + 
-    scale_y_continuous(expand=c(0, 0), breaks=NA)
+    theme(axis.text.x=element_blank(), axis.title.x=element_blank(), 
+         axis.text.y=element_blank(), axis.title.y=element_blank()) +
+    scale_x_continuous(expand=c(0, 0), breaks=NULL) + 
+    scale_y_continuous(expand=c(0, 0), breaks=NULL)
 
 #####################################
 ##Figure 2 in supplemental material##
 #####################################
-
 #By default, the intensities are only plotted for the pm probes.
 Index = unlist(indexProbes(yeast.raw[,1:30], which = "pm"))
 intensities = as.vector(intensity(yeast.raw[,1:30])[Index, , drop = FALSE])
@@ -43,6 +42,7 @@ dd_g = data.frame(intensities=log2(intensities),
         tps = rep(exp_fac$tps, each=no_of_probes),
         replicate = factor(rep(exp_fac$replicate, each=no_of_probes)),
         strain = rep(exp_fac$strain, each=no_of_probes))
+dd_g$strain = factor(dd_g$strain, labels=c("Mutant", "Wild type"))
 
 ggplot(dd_g) + 
     geom_density(aes(x=intensities, colour=replicate)) + 
@@ -68,28 +68,35 @@ dd_raw = data.frame(intensities=log2(intensities),
     replicate = factor(rep(exp_fac$replicate, each=no_of_probes)),
     strain = rep(exp_fac$strain, each=no_of_probes))
 dd_raw$type = "Raw"
+
+no_of_probes = length(exprs(yeast.rma))/30
+
 dd_rma = data.frame(intensities=as.vector(exprs(yeast.rma)),
                     tps = rep(exp_fac$tps, each=no_of_probes),
-                    replicate = factor(rep(exp_fac$replicate, each=no_of_probes)),
+                    replicate = factor(rep(exp_fac$replicate, 
+                                           each=no_of_probes)),
                     strain = rep(exp_fac$strain, each=no_of_probes))
 dd_rma$type = "RMA"
+
 
 ##Boxplots of dd_raw
 ggplot(dd_raw) + 
     stat_boxplot(aes(y=intensities, x=replicate), coef=Inf) +
     facet_grid(tps ~ strain) +  
     ylab("Density") + 
-    xlab("Log (base 2) intensities") 
+    xlab("Log (base 2) intensities") + 
+    ylim(c(2, 16))
 
 ##Boxplots of dd_rma
 ggplot(dd_rma) + 
     stat_boxplot(aes(y=intensities, x=replicate), coef=100) + 
     facet_grid(tps ~ strain) +  
     ylab("Density") + 
-    xlab("Log (base 2) intensities") 
+    xlab("Log (base 2) intensities")  + 
+    ylim(c(2, 16))
 
 ##Boxplots of box raw and rma
-ggplot(rbind(dd_g, dd_rma)) + 
+ggplot(rbind(dd_raw, dd_rma)) + 
     stat_boxplot(aes(y=intensities, x=replicate,  colour=type), coef=100) + 
     facet_grid(tps ~ strain) +  
     ylab("Density") + 

@@ -1,7 +1,10 @@
 library(ggplot2)
 library(plyr)
 library(reshape2)
+
+#############################
 ##Figure 1 of main document
+############################
 ##PCA 
 dd_pca = exp_fac
 dd_pca$tps = factor(dd_pca$tps)
@@ -11,7 +14,9 @@ ggplot(dd_pca, aes(x, y)) +
     geom_point(aes(colour=strain, pch=tps)) + 
     xlab("PC 1") + ylab("PC 2")
 
+############################
 ##Figure 2 of main document
+############################
 ##PCA 
 top_9_genes = modFordered[1:9]
 gene_id = c_df$probe[top_9_genes]
@@ -45,7 +50,7 @@ gene_list$threshold = as.factor(abs(gene_list$logFC) > log2(2)
 ##Construct the plot object
 ggplot(data=gene_list, aes(x=logFC, y=-log10(P.Value), colour=threshold)) +
     geom_point(alpha=0.4, size=1.75) +
-    opts(legend.position = "none") +
+    theme(legend.position = "none") +
     geom_hline(yintercept=-log10(0.05/5900), alpha=0.3) + 
     geom_vline(xintercept=log2(2), alpha=0.3) + 
     geom_vline(xintercept=-log2(2), alpha=0.3) + 
@@ -55,4 +60,36 @@ ggplot(data=gene_list, aes(x=logFC, y=-log10(P.Value), colour=threshold)) +
     
 #Figure 4
 #Heat map
+head(m)
+melt_m = melt(m)
+head(melt_m)
+ggplot(melt_m, aes(Var1, Var2)) + 
+    geom_raster(aes(fill=value))
+
+?hclust
+m1 = m[1:50,]
+l= hclust(dist(m1), method='average')
+melt_m = melt(m1)
+
+l$order
+head(melt_m)
+melt_m$Var1 = factor(melt_m$Var1, levels=hv$rowInd)
+hv$rowInd
+l$order
+
+ggplot(melt_m, aes(Var2, Var1)) + 
+    geom_raster(aes(fill=value)) + 
+    scale_fill_gradient2(low="red", high="green") #+ 
+    scale_x_continuous(expand=c(0, 0)) #+ 
+    scale_y_continuous(expand=c(0, 0)) 
+
+
+
+
+
+
+
+
+
+
 

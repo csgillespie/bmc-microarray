@@ -301,10 +301,10 @@ colnames(m) = sort(unique(exp_fac$tps))
 ## @knitr F4
 library(gplots)
 #Cluster the top 50 genes
-heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
+hv = heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
           key=FALSE, keysize=1.0, symkey=FALSE, density.info='none', 
           trace='none', colsep=rep(1:10), sepcolor='white', 
-          sepwidth=0.05, labRow = NA, cexCol=1,
+          sepwidth=0.05, cexCol=1,
           hclustfun=function(c){hclust(c, method='average')})
 
 
