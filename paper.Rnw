@@ -116,7 +116,7 @@ Assuming that R is already installed, Bioconductor is fairly
 straightforward to obtain installation script, viz:
 
 <<eval=FALSE>>=
-url='http://bioconductor.org/biocLite.R'
+url = 'http://bioconductor.org/biocLite.R'
 source(url)
 biocLite()
 @ 
@@ -215,7 +215,7 @@ library(affy)
 library(yeast2probe)
 source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
-RemoveProbes(s_cer[ ,1], cleancdf, 'yeast2probe') 
+RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe') 
 @
 Note that the commands in \cc{RemoveProbes.R} are listed in Appendix A. Thus the attributes of \cc{yeast.raw}, obtained via
 \cc{print(yeast.raw)}, are now
@@ -236,7 +236,7 @@ Before any formal statistical analysis, it is important to check for
 data quality. Initially, we might examine the perfect and mismatch
 probe-level data to detect anomalies. Images of the first five arrays can be obtained using
 <<s_fig1,eval=FALSE,tidy=TRUE>>=
-for(i in 1:5){
+for(i in 1:5) {
     plot_title = paste('Strain: ', exp_fac$strain[i], 
         'Time: ', exp_fac$tps[i])
         d = exp_fac$data_order[i]
@@ -293,8 +293,8 @@ normalised via
 
 <<eval=TRUE,cache=TRUE,results=FALSE,message=FALSE>>=
 yeast.rma = rma(yeast.raw)
-yeast.matrix = exprs(yeast.rma)[ ,exp_fac$data_order]
-colnames(yeast.matrix) = paste(exp_fac$strain, exp_fac$tps, sep='')
+yeast.matrix = exprs(yeast.rma)[, exp_fac$data_order]
+colnames(yeast.matrix) = paste0(exp_fac$strain, exp_fac$tps)
 exp_fac$data_order = 1:30
 @
 
@@ -630,8 +630,10 @@ two-fold change in their expression level. This gene list is obtained using the 
 
 <<eval=TRUE,cache=TRUE>>=
 #Obtain the maximum fold change but keep the sign 
-maxfoldchange = function(foldchange)
-foldchange[which.max(abs(foldchange))]  
+maxfoldchange = function(foldchange){
+    foldchange[which.max(abs(foldchange))]
+}
+    
 difference = apply(eb$coeff, 1, maxfoldchange)
 pvalue = eb$F.p.value
 lodd = -log10(pvalue)
@@ -739,7 +741,7 @@ see \cite{Futschik05,Futschik07}. The \cc{Mfuzz} package
 implements soft clustering using a fuzzy c-means algorithm. Analysing
 the data for $c=8$ clusters is achieved by using
 
-<<F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \texttt{Mfuzz} package.",message=FALSE>>=
+<<F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \\texttt{Mfuzz} package.",message=FALSE>>=
 library(Mfuzz)
 tmp_expr = new('ExpressionSet', exprs=m)
 cl = mfuzz(tmp_expr, c=8, m=1.25)

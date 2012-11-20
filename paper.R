@@ -2,7 +2,7 @@
 ## @knitr unnamed-chunk-1
 opts_chunk$set(prompt = FALSE,fig.path='graphics/', fig.align='center',fig.lp="")
 #knit_hooks$set()
-options(width=90)
+options(width=75)
 knit_hooks$set(
     par.nice = function(before, options, envir) {
         if (before && !is.null(options$par.mfrow)){
@@ -20,7 +20,7 @@ read_chunk('RemoveProbes.R')
 
 
 ## @knitr unnamed-chunk-2
-url='http://bioconductor.org/biocLite.R'
+url = 'http://bioconductor.org/biocLite.R'
 source(url)
 biocLite()
 
@@ -57,9 +57,8 @@ exp_fac$replicate = rep(1:3, each=5, 2)
 #Read in the mask file
 s_cer = read.table('s_cerevisiae.msk', skip=2, 
 stringsAsFactors=FALSE)
-probe_filter = s_cer[[1]]
 source('ExtractIDs.R')
-c_df = ExtractIDs(probe_filter)
+c_df = ExtractIDs(s_cer[ ,1])
 
 
 ## @knitr unnamed-chunk-8
@@ -68,11 +67,11 @@ library(affy)
 library(yeast2probe)
 source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
-RemoveProbes(probe_filter, cleancdf, 'yeast2probe') 
+RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe') 
 
 
 ## @knitr s_fig1
-for(i in 1:5){
+for(i in 1:5) {
     plot_title = paste('Strain: ', exp_fac$strain[i], 
         'Time: ', exp_fac$tps[i])
         d = exp_fac$data_order[i]
@@ -82,14 +81,13 @@ for(i in 1:5){
 
 ## @knitr s_fig2
 d = exp_fac$data_order[1:5]
-hist(yeast.raw[,d], lwd=2, 
-     ylab="Density", xlab="Log (base 2) intensities") 
+hist(yeast.raw[,d], lwd=2, ylab="Density", xlab="Log (base 2) intensities") 
 
 
 ## @knitr unnamed-chunk-9
 yeast.rma = rma(yeast.raw)
-yeast.matrix = exprs(yeast.rma)[ ,exp_fac$data_order]
-colnames(yeast.matrix) = paste(exp_fac$strain, exp_fac$tps, sep='')
+yeast.matrix = exprs(yeast.rma)[, exp_fac$data_order]
+colnames(yeast.matrix) = paste0(exp_fac$strain, exp_fac$tps)
 exp_fac$data_order = 1:30
 
 
@@ -108,9 +106,8 @@ yeast.scores = predict(yeast.PC)
 
 ## @knitr F1
 #Plot of the first two principal components
-plot(yeast.scores[,1], yeast.scores[,2], 
-    xlab='PC 1', ylab='PC 2', 
-    pch=rep(seq(1,5), 6), col=as.numeric(exp_fac$strain))
+plot(yeast.scores[,1], yeast.scores[,2], xlab='PC 1', ylab='PC 2', 
+    pch=rep(1:5, 6), col=as.numeric(exp_fac$strain))
 legend("bottomleft", pch=1:5, cex=0.6, 
     c('t 0', 't 60', 't 120', 't 180', 't 240'))
 
@@ -248,8 +245,10 @@ length(intersect(tc_top_probes, lm_top_probes))
 
 ## @knitr unnamed-chunk-22
 #Obtain the maximum fold change but keep the sign 
-maxfoldchange = function(foldchange)
-foldchange[which.max(abs(foldchange))]  
+maxfoldchange = function(foldchange){
+    foldchange[which.max(abs(foldchange))]
+}
+    
 difference = apply(eb$coeff, 1, maxfoldchange)
 pvalue = eb$F.p.value
 lodd = -log10(pvalue)
@@ -301,10 +300,10 @@ colnames(m) = sort(unique(exp_fac$tps))
 ## @knitr F4
 library(gplots)
 #Cluster the top 50 genes
-hv = heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
+heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
           key=FALSE, keysize=1.0, symkey=FALSE, density.info='none', 
           trace='none', colsep=rep(1:10), sepcolor='white', 
-          sepwidth=0.05, cexCol=1,
+          sepwidth=0.05, labRow = NA, cexCol=1,
           hclustfun=function(c){hclust(c, method='average')})
 
 
@@ -396,10 +395,5 @@ run_chunk("s_fig4")
 
 ## @knitr unnamed-chunk-28
 sessionInfo()
-
-
-## @knitr unnamed-chunk-29
-library(knitr)
-purl("paper.Rnw")
 
 
