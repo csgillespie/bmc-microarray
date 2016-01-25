@@ -1,5 +1,5 @@
-
-## @knitr echo=FALSE
+## ----echo=FALSE----------------------------------------------------------
+library("knitr")
 opts_chunk$set(prompt = FALSE,fig.path='graphics/', fig.align='center',fig.lp="")
 #knit_hooks$set()
 options(width=75)
@@ -18,50 +18,43 @@ knit_hooks$set(
 read_chunk('ExtractIDs.R')
 read_chunk('RemoveProbes.R')
 
-
-## @knitr eval=FALSE
+## ----eval=FALSE----------------------------------------------------------
 ## url = 'http://bioconductor.org/biocLite.R'
 ## source(url)
 ## biocLite()
 
-
-## @knitr eval=FALSE,tidy=FALSE
+## ----eval=FALSE,tidy=FALSE-----------------------------------------------
 ## ##From Bioconductor
-## biocLite(c('ArrayExpress', 'Mfuzz', 'timecourse', 'yeast2.db',
-##     'yeast2probe', 'yeast2cdf'))
+## biocLite(c('ArrayExpress', 'Mfuzz, 'timecourse', 'yeast2.db',
+##     'yeast2probe', 'yeast2cdf', aAffyPLM'))
 ## ##From cran
 ## install.packages(c('GeneNet', 'gplots'))
 
-
-## @knitr eval=FALSE
+## ----eval=FALSE----------------------------------------------------------
 ## update.packages(repos=biocinstallRepos())
 
-
-## @knitr eval=TRUE,hide=TRUE,cache=TRUE,message=FALSE
+## ----eval=TRUE,hide=TRUE,cache=TRUE,message=FALSE------------------------
 library(ArrayExpress)
 yeast.raw = ArrayExpress('E-MEXP-1551')
 
-
-## @knitr eval=TRUE,cache=TRUE,tidy=FALSE
+## ----eval=TRUE,cache=TRUE,tidy=FALSE-------------------------------------
 ph = yeast.raw@phenoData
 exp_fac = data.frame(data_order = 1:30, 
-    strain = ph@data$Factor.Value..GENOTYPE.,  
-    replicates = ph@data$Factor.Value..INDIVIDUAL.,
-    tps = ph@data$Factor.Value..TIME.)
+    strain = ph@data$Factor.Value..phenotype.,  
+    replicates = ph@data$Characteristics..individual.,
+    tps = ph@data$Factor.Value..time.)
 levels(exp_fac$strain) = c('m', 'w')
 exp_fac = with(exp_fac, exp_fac[order(strain, replicates, tps), ])
 exp_fac$replicate = rep(1:3, each=5, 2)
 
-
-## @knitr eval=TRUE,message=FALSE,warning=FALSE
+## ----eval=TRUE,message=FALSE,warning=FALSE-------------------------------
 #Read in the mask file
 s_cer = read.table('s_cerevisiae.msk', skip=2, 
 stringsAsFactors=FALSE)
 source('ExtractIDs.R')
 c_df = ExtractIDs(s_cer[ ,1])
 
-
-## @knitr eval=TRUE,message=FALSE
+## ----eval=TRUE,message=FALSE---------------------------------------------
 #Get the raw dataset for S. cerevisiae only
 library(affy)
 library(yeast2probe)
@@ -69,8 +62,8 @@ source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
 RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe') 
 
-
-## @knitr s_fig1,eval=FALSE,tidy=TRUE
+## ----s_fig1,eval=FALSE,tidy=TRUE, echo=-1--------------------------------
+## par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01, cex.axis=0.9, las=1, mfrow=c(2,3))
 ## for(i in 1:5) {
 ##     plot_title = paste('Strain: ', exp_fac$strain[i],
 ##         'Time: ', exp_fac$tps[i])
@@ -78,46 +71,41 @@ RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe')
 ##     image(yeast.raw[,d], main=plot_title)
 ## }
 
-
-## @knitr s_fig2,eval=FALSE,tidy=FALSE
+## ----s_fig2,eval=FALSE,tidy=FALSE,echo=-1--------------------------------
+## par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01, cex.axis=0.9, las=1)
 ## d = exp_fac$data_order[1:5]
 ## hist(yeast.raw[,d], lwd=2, ylab="Density", xlab="Log (base 2) intensities")
 
-
-## @knitr eval=TRUE,cache=TRUE,results=FALSE,message=FALSE
+## ----eval=TRUE,cache=TRUE,results=FALSE,message=FALSE--------------------
 yeast.rma = rma(yeast.raw)
 yeast.matrix = exprs(yeast.rma)[, exp_fac$data_order]
 colnames(yeast.matrix) = paste0(exp_fac$strain, exp_fac$tps)
 exp_fac$data_order = 1:30
 
-
-## @knitr s_fig3,eval=FALSE
+## ----s_fig3,eval=FALSE, echo=-1------------------------------------------
+## par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01,cex.axis=0.9, las=1, mfrow=c(1,2))
 ## library(affyPLM)
 ## #Raw data intensities
 ## boxplot(yeast.raw, col='red', main='', ylim=c(2,16))
 ## #Normalised intensities
 ## boxplot(yeast.rma, col='blue', ylim=c(2,16))
 
-
-## @knitr eval=TRUE
+## ----eval=TRUE-----------------------------------------------------------
 yeast.PC = prcomp(t(yeast.matrix))
 yeast.scores = predict(yeast.PC)
 
-
-## @knitr F1,eval=TRUE, tidy=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="A plot of the first two principal components. The red symbols correspond to the wild-type strain.", par.nice=TRUE
+## ----F1,eval=TRUE, tidy=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="A plot of the first two principal components. The red symbols correspond to the wild-type strain.", par.nice=TRUE----
 #Plot of the first two principal components
 plot(yeast.scores[,1], yeast.scores[,2], xlab='PC 1', ylab='PC 2', 
     pch=rep(1:5, 6), col=as.numeric(exp_fac$strain))
 legend("bottomleft", pch=1:5, cex=0.6, 
     c('t 0', 't 60', 't 120', 't 180', 't 240'))
 
-
-## @knitr eval=TRUE,message=FALSE
+## ----eval=TRUE,message=FALSE---------------------------------------------
 library(timecourse)
 size = matrix(3, nrow = 5900, ncol = 2)
 
-
-## @knitr eval=TRUE,tidy=FALSE, cache=TRUE
+## ----eval=TRUE,tidy=FALSE, cache=TRUE------------------------------------
 c.grp = as.character(exp_fac$strain)
 t.grp = as.numeric(exp_fac$tps)
 r.grp = as.character(exp_fac$replicate)
@@ -125,18 +113,16 @@ MB.2D = mb.long(yeast.matrix, times = 5, method = '2',
     reps = size, condition.grp = c.grp, time.grp = t.grp, 
     rep.grp = r.grp)
 
-
-## @knitr eval=TRUE,cache=TRUE
+## ----eval=TRUE,cache=TRUE------------------------------------------------
 gene_positions = MB.2D$pos.HotellingT2[1:100]
 gnames = rownames(yeast.matrix)
 gene_probes = gnames[gene_positions]
 
-
-## @knitr s_fig4,eval=FALSE
+## ----s_fig4,eval=FALSE, echo=-1------------------------------------------
+## par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01, cex.axis=0.9, las=1)
 ## plotProfile(MB.2D, ranking=1, gnames=rownames(yeast.matrix))
 
-
-## @knitr eval=TRUE,tidy=FALSE
+## ----eval=TRUE,tidy=FALSE, message=FALSE---------------------------------
 library(limma)
 expt_structure = factor(colnames(yeast.matrix))
 
@@ -145,27 +131,22 @@ X = model.matrix(~0 + expt_structure)
 colnames(X) =  c('m0', 'm60', 'm120', 'm180', 'm240', 
     'w0', 'w60', 'w120', 'w180', 'w240')
 
-
-## @knitr eval=TRUE,cache=TRUE
+## ----eval=TRUE,cache=TRUE------------------------------------------------
 lm.fit = lmFit(yeast.matrix, X) 
 
-
-## @knitr eval=TRUE,cache=TRUE
+## ----eval=TRUE,cache=TRUE------------------------------------------------
 mc = makeContrasts('m60-w60', 'm120-w120', 'm180-w180', 'm240-w240', levels=X)
 c.fit = contrasts.fit(lm.fit, mc)
 eb = eBayes(c.fit)
 
-
-## @knitr eval=TRUE,results='hide',cache=TRUE
+## ----eval=TRUE,results='hide',cache=TRUE---------------------------------
 #see help(toptable) for more options
 toptable(eb, sort.by='logFC') 
 
-
-## @knitr eval=TRUE, results='hide',cache=TRUE
+## ----eval=TRUE, results='hide',cache=TRUE--------------------------------
 topTableF(eb)
 
-
-## @knitr eval=TRUE,cache=TRUE,tidy=FALSE
+## ----eval=TRUE,cache=TRUE,tidy=FALSE-------------------------------------
 modFpvalue = eb$F.p.value
 ##Change 'bonferroni' to 'fdr' to use the 
 ##false discovery rate as a cut-off
@@ -189,8 +170,7 @@ write.table(cbind(c_rank_probe, c_rank_genename, updown),
     file='updown.csv', sep=',', 
     row.names=FALSE, col.names=FALSE)
 
-
-## @knitr F2,eval=TRUE,echo=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=5,out.width="0.8\\textwidth",fig.cap="Time course expression levels for the top 9 differentially expressed genes, ranked by their $F$-statistic. The triangles and circles correspond to the wild-type and mutant genes respectively.",par.nice=TRUE, par.mfrow=c(3,3), tidy=FALSE
+## ----F2,eval=TRUE,echo=FALSE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=5,out.width="0.8\\textwidth",fig.cap="Time course expression levels for the top 9 differentially expressed genes, ranked by their $F$-statistic. The triangles and circles correspond to the wild-type and mutant genes respectively.",par.nice=TRUE, par.mfrow=c(3,3), tidy=FALSE----
 
 for(i in 0:8){
     indx = rank(modF) == nrow(yeast.matrix)-i
@@ -212,8 +192,7 @@ for(i in 0:8){
     }  
 } 
 
-
-## @knitr eval=FALSE, tidy=FALSE
+## ----eval=FALSE, tidy=FALSE----------------------------------------------
 ## #Rank of Probesets, also output gene names
 ## par(mfrow=c(3, 3), ask=TRUE)
 ## for(i in 0:99){
@@ -234,16 +213,14 @@ for(i in 0:8){
 ##     }
 ## }
 
-
-## @knitr eval=TRUE, cache=TRUE
+## ----eval=TRUE, cache=TRUE-----------------------------------------------
 N = 100
 gene_positions = MB.2D$pos.HotellingT2[1:N]
 tc_top_probes = gnames[gene_positions]
 lm_top_probes = c_df$probe[modFordered[1:N]]
 length(intersect(tc_top_probes, lm_top_probes))
 
-
-## @knitr eval=TRUE,cache=TRUE
+## ----eval=TRUE,cache=TRUE------------------------------------------------
 #Obtain the maximum fold change but keep the sign 
 maxfoldchange = function(foldchange){
     foldchange[which.max(abs(foldchange))]
@@ -267,8 +244,7 @@ lpv = ordered_lpv[1:length(pvalue[np])]
 oo = union(lpv, hfc) 
 ii = intersect(lpv, hfc) 
 
-
-## @knitr F3,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Volcano plot showing the bonferroni cut-off and the two-fold change.", nice.par=TRUE,tidy=FALSE
+## ----F3,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Volcano plot showing the bonferroni cut-off and the two-fold change.", nice.par=TRUE,tidy=FALSE----
 #Construct a volcano plot using moderated F-statistics
 plot(difference[-oo], lodd[-oo], xlim=range(difference), 
 ylim=range(lodd), cex=0.7)
@@ -283,8 +259,7 @@ text(min(difference) + 1, -log10(0.05/5900) + 0.2,
     'Bonferroni cut off', cex=0.8) 
 text(1, max(lodd) - 1, paste(length(ii), 'intersects'), cex=0.8)
 
-
-## @knitr eval=TRUE
+## ----eval=TRUE-----------------------------------------------------------
 c_probe_data = yeast.matrix[ii,]
 #Average of WT
 wt_means = apply(c_probe_data[,16:30], 1, mean)
@@ -296,8 +271,7 @@ for(i in 1:5){
 }
 colnames(m) = sort(unique(exp_fac$tps))
 
-
-## @knitr F4,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Clustering of the top fifty differentially expressed genes. Red and green correspond to up- and down-regulation respectively.",message=FALSE, nice.par=TRUE,tidy=FALSE
+## ----F4,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Clustering of the top fifty differentially expressed genes. Red and green correspond to up- and down-regulation respectively.",message=FALSE, nice.par=TRUE,tidy=FALSE----
 library(gplots)
 #Cluster the top 50 genes
 heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
@@ -306,20 +280,17 @@ heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75),
           sepwidth=0.05, labRow = NA, cexCol=1,
           hclustfun=function(c){hclust(c, method='average')})
 
-
-## @knitr F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \\texttt{Mfuzz} package.",message=FALSE
+## ----F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \\texttt{Mfuzz} package.",message=FALSE----
 library(Mfuzz)
 tmp_expr = new('ExpressionSet', exprs=m)
 cl = mfuzz(tmp_expr, c=8, m=1.25)
 mfuzz.plot(tmp_expr,cl=cl, mfrow=c(2, 4), new.window = FALSE)
 
-
-## @knitr eval=TRUE,results='hide'
+## ----eval=TRUE,results='hide'--------------------------------------------
 cluster = 1
 cl[[4]][, cluster] 
 
-
-## @knitr eval=TRUE,results='hide',message=FALSE
+## ----eval=TRUE,results='hide',message=FALSE------------------------------
 exp_fac = with(exp_fac, exp_fac[order(strain, tps, replicates), ])
 #Construct a longitudinal object
 library(GeneNet)
@@ -328,8 +299,7 @@ m = yeast.matrix[ii[1:ngenes],]
 mnew = m[,exp_fac$data_order[1:15]]
 mlong = as.longitudinal(t(mnew), repeats=3, time=0:4)
 
-
-## @knitr eval=FALSE,cache=TRUE,message=FALSE,results='hide'
+## ----eval=FALSE,cache=TRUE,message=FALSE,results='hide'------------------
 ## #Compute partial correlations
 ## pcor.dyn = ggm.estimate.pcor(mlong, method = 'dynamic')
 ## 
@@ -346,14 +316,11 @@ mlong = as.longitudinal(t(mnew), repeats=3, time=0:4)
 ## network.make.dot(filename='net.dot', m.net, rnames,
 ##     main='Yeast Network')
 
+## ----ExtractIDs,tidy=FALSE-----------------------------------------------
 
-## @knitr ExtractIDs,tidy=FALSE
+## ----RemoveProbes,tidy=FALSE---------------------------------------------
 
-
-## @knitr RemoveProbes,tidy=FALSE
-
-
-## @knitr eval=FALSE
+## ----eval=FALSE----------------------------------------------------------
 ## #Function to average the expression of
 ## #probesets which map to same gene
 ## probeset2genelevel = function(onesample)
@@ -362,36 +329,15 @@ mlong = as.longitudinal(t(mnew), repeats=3, time=0:4)
 ## #Average for each column/array
 ## c_gene_data = apply(exprs(yeast.rma), 2, probeset2genelevel)
 
+## ----s_fig11,ref.label="s_fig1",eval=TRUE,dev="png",fig.ext="png",cache=FALSE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h"----
+#knitr::run_chunk("s_fig1")
 
-## @knitr F1A,eval=TRUE,dev="png",fig.ext="png",cache=TRUE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h"
-par(mar=c(3,3,2,1), 
-           mgp=c(2,0.4,0), tck=-.01,
-               cex.axis=0.9, las=1, mfrow=c(2,3))
-run_chunk("s_fig1")
+## ----F2A,ref.label="s_fig2",eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Density plots for the first replication of the mutant yeast strain.",nice.par=TRUE,message=FALSE----
 
+## ----F3A,ref.label="s_fig3",eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.8\\linewidth",echo=FALSE, message=FALSE,fig.cap="Boxplots of the raw and normalised intensities. The default boxplot is to include both PM and MM intensities, whereas for the density plots in Figure~\ref{F2} the default is for only the PM intensities."----
 
-## @knitr F2A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Density plots for the first replication of the mutant yeast strain.",nice.par=TRUE,message=FALSE
-par(mar=c(3,3,2,1), 
-           mgp=c(2,0.4,0), tck=-.01,
-               cex.axis=0.9, las=1)
-run_chunk("s_fig2")
+## ----F4A,ref.label="s_fig4", eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Time course expression levels for the top differentially expressed gene, ranked by their Hotelling statistic using the \texttt{timecourse} library."----
 
-
-## @knitr F3A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.8\\linewidth",echo=FALSE, message=FALSE,fig.cap="Boxplots of the raw and normalised intensities. The default boxplot is to include both PM and MM intensities, whereas for the density plots in Figure~\ref{F2} the default is for only the PM intensities."
-par(mar=c(3,3,2,1), 
-           mgp=c(2,0.4,0), tck=-.01,
-               cex.axis=0.9, las=1, mfrow=c(1,2))
-run_chunk("s_fig3")
-
-
-## @knitr F4A,eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Time course expression levels for the top differentially expressed gene, ranked by their Hotelling statistic using the \texttt{timecourse} library."
-par(mar=c(3,3,2,1), 
-           mgp=c(2,0.4,0), tck=-.01,
-               cex.axis=0.9, las=1)
-run_chunk("s_fig4")
-
-
-## @knitr eval=TRUE
+## ----eval=TRUE-----------------------------------------------------------
 sessionInfo()
-
 
