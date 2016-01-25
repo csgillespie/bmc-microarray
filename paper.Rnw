@@ -129,8 +129,8 @@ packages needed for this paper can be installed by using
 
 <<eval=FALSE,tidy=FALSE>>=
 ##From Bioconductor
-biocLite(c('ArrayExpress', 'Mfuzz, 'timecourse', 'yeast2.db', 
-    'yeast2probe', 'yeast2cdf', aAffyPLM'))
+biocLite(c('ArrayExpress', 'Mfuzz', 'timecourse', 'yeast2.db', 
+    'yeast2probe', 'yeast2cdf', 'aAffyPLM'))
 ##From cran
 install.packages(c('GeneNet', 'gplots'))
 @
