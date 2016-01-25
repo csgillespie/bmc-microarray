@@ -25,8 +25,8 @@ read_chunk('RemoveProbes.R')
 
 ## ----eval=FALSE,tidy=FALSE-----------------------------------------------
 ## ##From Bioconductor
-## biocLite(c('ArrayExpress', 'Mfuzz, 'timecourse', 'yeast2.db',
-##     'yeast2probe', 'yeast2cdf', aAffyPLM'))
+## biocLite(c('ArrayExpress', 'Mfuzz', 'timecourse', 'yeast2.db',
+##     'yeast2probe', 'yeast2cdf', 'affyPLM'))
 ## ##From cran
 ## install.packages(c('GeneNet', 'gplots'))
 
@@ -34,7 +34,7 @@ read_chunk('RemoveProbes.R')
 ## update.packages(repos=biocinstallRepos())
 
 ## ----eval=TRUE,hide=TRUE,cache=TRUE,message=FALSE------------------------
-library(ArrayExpress)
+library('ArrayExpress')
 yeast.raw = ArrayExpress('E-MEXP-1551')
 
 ## ----eval=TRUE,cache=TRUE,tidy=FALSE-------------------------------------
@@ -45,19 +45,19 @@ exp_fac = data.frame(data_order = 1:30,
     tps = ph@data$Factor.Value..time.)
 levels(exp_fac$strain) = c('m', 'w')
 exp_fac = with(exp_fac, exp_fac[order(strain, replicates, tps), ])
-exp_fac$replicate = rep(1:3, each=5, 2)
+exp_fac$replicate = rep(1:3, each=5, times=2)
 
 ## ----eval=TRUE,message=FALSE,warning=FALSE-------------------------------
 #Read in the mask file
 s_cer = read.table('s_cerevisiae.msk', skip=2, 
-stringsAsFactors=FALSE)
+    stringsAsFactors=FALSE)
 source('ExtractIDs.R')
 c_df = ExtractIDs(s_cer[ ,1])
 
 ## ----eval=TRUE,message=FALSE---------------------------------------------
 #Get the raw dataset for S. cerevisiae only
-library(affy)
-library(yeast2probe)
+library('affy')
+library('yeast2probe')
 source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
 RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe') 
@@ -84,11 +84,11 @@ exp_fac$data_order = 1:30
 
 ## ----s_fig3,eval=FALSE, echo=-1------------------------------------------
 ## par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01,cex.axis=0.9, las=1, mfrow=c(1,2))
-## library(affyPLM)
+## library('affyPLM')
 ## #Raw data intensities
-## boxplot(yeast.raw, col='red', main='', ylim=c(2,16))
+## boxplot(yeast.raw, col='red', main='', ylim=c(2, 16))
 ## #Normalised intensities
-## boxplot(yeast.rma, col='blue', ylim=c(2,16))
+## boxplot(yeast.rma, col='blue', ylim=c(2, 16))
 
 ## ----eval=TRUE-----------------------------------------------------------
 yeast.PC = prcomp(t(yeast.matrix))
@@ -102,7 +102,7 @@ legend("bottomleft", pch=1:5, cex=0.6,
     c('t 0', 't 60', 't 120', 't 180', 't 240'))
 
 ## ----eval=TRUE,message=FALSE---------------------------------------------
-library(timecourse)
+library('timecourse')
 size = matrix(3, nrow = 5900, ncol = 2)
 
 ## ----eval=TRUE,tidy=FALSE, cache=TRUE------------------------------------
@@ -123,7 +123,7 @@ gene_probes = gnames[gene_positions]
 ## plotProfile(MB.2D, ranking=1, gnames=rownames(yeast.matrix))
 
 ## ----eval=TRUE,tidy=FALSE, message=FALSE---------------------------------
-library(limma)
+library('limma')
 expt_structure = factor(colnames(yeast.matrix))
 
 #Construct the design matrix
@@ -272,8 +272,8 @@ for(i in 1:5){
 colnames(m) = sort(unique(exp_fac$tps))
 
 ## ----F4,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Clustering of the top fifty differentially expressed genes. Red and green correspond to up- and down-regulation respectively.",message=FALSE, nice.par=TRUE,tidy=FALSE----
-library(gplots)
-#Cluster the top 50 genes
+library('gplots')
+# Cluster the top 50 genes
 heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
           key=FALSE, keysize=1.0, symkey=FALSE, density.info='none', 
           trace='none', colsep=rep(1:10), sepcolor='white', 
@@ -281,7 +281,7 @@ heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75),
           hclustfun=function(c){hclust(c, method='average')})
 
 ## ----F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \\texttt{Mfuzz} package.",message=FALSE----
-library(Mfuzz)
+library('Mfuzz')
 tmp_expr = new('ExpressionSet', exprs=m)
 cl = mfuzz(tmp_expr, c=8, m=1.25)
 mfuzz.plot(tmp_expr,cl=cl, mfrow=c(2, 4), new.window = FALSE)
@@ -293,7 +293,7 @@ cl[[4]][, cluster]
 ## ----eval=TRUE,results='hide',message=FALSE------------------------------
 exp_fac = with(exp_fac, exp_fac[order(strain, tps, replicates), ])
 #Construct a longitudinal object
-library(GeneNet)
+library('GeneNet')
 ngenes = 100
 m = yeast.matrix[ii[1:ngenes],]
 mnew = m[,exp_fac$data_order[1:15]]
@@ -329,7 +329,7 @@ mlong = as.longitudinal(t(mnew), repeats=3, time=0:4)
 ## #Average for each column/array
 ## c_gene_data = apply(exprs(yeast.rma), 2, probeset2genelevel)
 
-## ----s_fig11,ref.label="s_fig1",eval=TRUE,dev="png",fig.ext="png",cache=FALSE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h"----
+## ----F1A,ref.label="s_fig1",eval=TRUE,dev="png",fig.ext="png",cache=FALSE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h"----
 #knitr::run_chunk("s_fig1")
 
 ## ----F2A,ref.label="s_fig2",eval=TRUE,dev="pdf",fig.ext="pdf",cache=TRUE,out.width="0.6\\linewidth",echo=FALSE, fig.cap="Density plots for the first replication of the mutant yeast strain.",nice.par=TRUE,message=FALSE----

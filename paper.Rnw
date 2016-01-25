@@ -102,12 +102,10 @@ a wild-type (WT) yeast strain and a strain carrying the \textit{cdc13-1}
 temperature sensitive mutation (in which telomere uncapping is induced by growth
 at temperatures above around 27${^\circ}$C). These replicates were sampled
 initially at 23${^\circ}$C (at which \textit{cdc13-1} has essentially WT
-telomeres) and then at 1, 2, 3 and 4 hours after a shift to 30${^\circ}$C to
+telomeres) and then at $1$, $2$, $3$ and $4$ hours after a shift to 30${^\circ}$C to
 induce telomere uncapping. The thirty resulting RNA samples were hybridised to
 Affymetrix yeast2 arrays. The microarray data are available in the ArrayExpress
 database (see \cite{Parkinson2009}) under accession number E-MEXP-1551 .
-
-
 
 \section{Loading microarray data into Bioconductor}
 
@@ -130,7 +128,7 @@ packages needed for this paper can be installed by using
 <<eval=FALSE,tidy=FALSE>>=
 ##From Bioconductor
 biocLite(c('ArrayExpress', 'Mfuzz', 'timecourse', 'yeast2.db', 
-    'yeast2probe', 'yeast2cdf', 'aAffyPLM'))
+    'yeast2probe', 'yeast2cdf', 'affyPLM'))
 ##From cran
 install.packages(c('GeneNet', 'gplots'))
 @
@@ -153,7 +151,7 @@ used in this paper is given in Appendix C.
 The data used in this paper can be downloaded from ArrayExpress into R using the commands
 
 <<eval=TRUE,hide=TRUE,cache=TRUE,message=FALSE>>=
-library(ArrayExpress)
+library('ArrayExpress')
 yeast.raw = ArrayExpress('E-MEXP-1551')
 @
 
@@ -162,15 +160,21 @@ yeast.raw = ArrayExpress('E-MEXP-1551')
 
 {\small\begin{verbatim}
     AffyBatch object
-    size of arrays = 496x496 features (3163 kb)
-    cdf = Yeast_2 (10928 affyids)
-    number of samples = 30
-    number of genes = 10928
-    annotation = yeast2
+    size of arrays=496x496 features (53 kb)
+    cdf=Yeast_2 (5900 affyids)
+    number of samples=30
+    number of genes=5900
+    annotation=yeast2
+    notes=c("E-MEXP-1551", "", "", "", "", "")
+	    c("E-MEXP-1551", "", "", "", "", "")
+	    c("temperature", "phenotype", "time", "", "", "")
+	    c("time_series_design", "genetic_modification_design", 
+	        "stimulus_or_stress_design", "in_vitro_design", 
+	        "co-expression_design", "transcription profiling by array")
 \end{verbatim}}
 \noindent If the Affymetrix microarray data sets have been downloaded into a single directory, then the \cc{.cel} files can be loaded into R using the \cc{ReadAffy} command.
 
-Also available from ArrayExpress are the experimental conditions. However, some preprocessing is necessary:
+Also available from \cc{ArrayExpress} are the experimental conditions. However some preprocessing is necessary:
 
 <<eval=TRUE,cache=TRUE,tidy=FALSE>>=
 ph = yeast.raw@phenoData
@@ -180,7 +184,7 @@ exp_fac = data.frame(data_order = 1:30,
     tps = ph@data$Factor.Value..time.)
 levels(exp_fac$strain) = c('m', 'w')
 exp_fac = with(exp_fac, exp_fac[order(strain, replicates, tps), ])
-exp_fac$replicate = rep(1:3, each=5, 2)
+exp_fac$replicate = rep(1:3, each=5, times=2)
 @
 
 \noindent The data frame \cc{exp\_fac} stores all the necessary information, such as strain, time and replicate, which are necessary for the statistical analysis.
@@ -205,15 +209,15 @@ We obtain a data frame containing lists of \textit{S. cerevisiae} genes, probes 
 <<eval=TRUE,message=FALSE,warning=FALSE>>=
 #Read in the mask file
 s_cer = read.table('s_cerevisiae.msk', skip=2, 
-stringsAsFactors=FALSE)
+    stringsAsFactors=FALSE)
 source('ExtractIDs.R')
 c_df = ExtractIDs(s_cer[ ,1])
 @
 \noindent We also need to restrict the view of \cc{yeast.raw} to the $x-$ and $y-$coordinates of the \textit{S. cerevisiae} probesets in the \cc{cdf} environment by using
 <<eval=TRUE,message=FALSE>>=
 #Get the raw dataset for S. cerevisiae only
-library(affy)
-library(yeast2probe)
+library('affy')
+library('yeast2probe')
 source('RemoveProbes.R')
 cleancdf = cleancdfname(yeast.raw@cdfName)
 RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe') 
@@ -221,14 +225,20 @@ RemoveProbes(s_cer[, 1], cleancdf, 'yeast2probe')
 Note that the commands in \cc{RemoveProbes.R} are listed in Appendix A. Thus the attributes of \cc{yeast.raw}, obtained via
 \cc{print(yeast.raw)}, are now
 {\small\begin{verbatim}
-    AffyBatch object
-    size of arrays = 496x496 features (3167 kb)
-    cdf = Yeast_2 (5900 affyids)
-    number of samples = 30
-    number of genes = 5900
-    annotation = yeast2
+   AffyBatch object
+    size of arrays=496x496 features (53 kb)
+    cdf=Yeast_2 (5900 affyids)
+    number of samples=30
+    number of genes=5900
+    annotation=yeast2
+    notes=c("E-MEXP-1551", "", "", "", "", "")
+    	c("E-MEXP-1551", "", "", "", "", "")
+    	c("temperature", "phenotype", "time", "", "", "")
+    	c("time_series_design", "genetic_modification_design", 
+    	"stimulus_or_stress_design", "in_vitro_design", 
+    	"co-expression_design", "transcription profiling by array")
 \end{verbatim}}
-\noindent and the number of genes (actually probesets here) is 5,900 now that the \textit{S. pombe} probesets have been removed.
+\noindent and the number of genes (actually probesets here) is $5,900$ now that the \textit{S. pombe} probesets have been removed.
 
 
 \subsection{Data Quality Assessment}
@@ -314,11 +324,11 @@ maximum and minimum values. The \cc{boxplot} command is in the
 
 <<s_fig3,eval=FALSE, echo=-1 >>=
 par(mar=c(3,3,2,1), mgp=c(2,0.4,0), tck=-.01,cex.axis=0.9, las=1, mfrow=c(1,2))
-library(affyPLM)
+library('affyPLM')
 #Raw data intensities
-boxplot(yeast.raw, col='red', main='', ylim=c(2,16))
+boxplot(yeast.raw, col='red', main='', ylim=c(2, 16))
 #Normalised intensities
-boxplot(yeast.rma, col='blue', ylim=c(2,16))
+boxplot(yeast.rma, col='blue', ylim=c(2, 16))
 @
 
 \subsection{Principal Component Analysis}
@@ -380,7 +390,7 @@ found in \cite{Tai07}. After installing the \texttt{timecourse} package,
 we construct a \texttt{size} matrix describing the replication
 structure using
 <<eval=TRUE,message=FALSE>>=
-library(timecourse)
+library('timecourse')
 size = matrix(3, nrow = 5900, ncol = 2)
 @
 \noindent To extract a list of differentially expressed we calculate the
@@ -445,7 +455,7 @@ three arrays on `m60', and so on.  Setting up the factor levels and the
 design matrix is done in R by using
 
 <<eval=TRUE,tidy=FALSE, message=FALSE>>=
-library(limma)
+library('limma')
 expt_structure = factor(colnames(yeast.matrix))
 
 #Construct the design matrix
@@ -537,7 +547,7 @@ write.table(cbind(c_rank_probe, c_rank_genename, updown),
 @
 
 
-The following code (adapted from lecture material found at
+\noindent The following code (adapted from lecture material found at
 \cite{speedcourse}) plots the time course expression for the top
 one hundred differentially expressed genes according to their
 $F$-statistic (see Figure~\ref{F2})
@@ -716,8 +726,8 @@ obtained by using the function \cc{heatmap.2} from the library
 \cc{gplots} via the following code
 
 <<F4,eval=TRUE,dev="pdf",fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Clustering of the top fifty differentially expressed genes. Red and green correspond to up- and down-regulation respectively.",message=FALSE, nice.par=TRUE,tidy=FALSE>>=
-library(gplots)
-#Cluster the top 50 genes
+library('gplots')
+# Cluster the top 50 genes
 heatmap.2(m[1:50,], dendrogram ='row', Colv=FALSE, col=greenred(75), 
           key=FALSE, keysize=1.0, symkey=FALSE, density.info='none', 
           trace='none', colsep=rep(1:10), sepcolor='white', 
@@ -747,7 +757,7 @@ implements soft clustering using a fuzzy c-means algorithm. Analysing
 the data for $c=8$ clusters is achieved by using
 
 <<F5,eval=TRUE,dev="pdf",fig.ext='pdf',fig.pos="!t", cache=TRUE, fig.width=6.5,fig.height=4,out.width="0.8\\textwidth",fig.cap="Eight clusters obtained from the \\texttt{Mfuzz} package.",message=FALSE>>=
-library(Mfuzz)
+library('Mfuzz')
 tmp_expr = new('ExpressionSet', exprs=m)
 cl = mfuzz(tmp_expr, c=8, m=1.25)
 mfuzz.plot(tmp_expr,cl=cl, mfrow=c(2, 4), new.window = FALSE)
@@ -795,7 +805,7 @@ is achieved by using the commands
 <<eval=TRUE,results='hide',message=FALSE>>=
 exp_fac = with(exp_fac, exp_fac[order(strain, tps, replicates), ])
 #Construct a longitudinal object
-library(GeneNet)
+library('GeneNet')
 ngenes = 100
 m = yeast.matrix[ii[1:ngenes],]
 mnew = m[,exp_fac$data_order[1:15]]
@@ -951,7 +961,7 @@ probeset level.
 
 \section{Additional figures}
 
-<<s_fig11,ref.label="s_fig1",eval=TRUE,dev="png",fig.ext="png",cache=FALSE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h">>=
+<<F1A,ref.label="s_fig1",eval=TRUE,dev="png",fig.ext="png",cache=FALSE,dpi=300,out.width="0.8\\linewidth",echo=FALSE, fig.cap="Image plots of the mismatch and perfect match probe intensities for the first replication of the mutant yeast strain. The corresponding times are indicated in the plot.", fig.pos="h">>=
 #knitr::run_chunk("s_fig1")
 @
 
